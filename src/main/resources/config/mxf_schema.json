@@ -1,0 +1,1840 @@
+{
+  "tables": [
+    {
+      "tableName": "RUNNING-INFO",
+      "fields": [
+        {
+          "table": "RUNNING-INFO",
+          "field": "auto_dis_since_power_on_(m)",
+          "desc": "本次上电周期（截至此行日志打印时间）的累计智驾里程，单位（m）",
+          "detail": ""
+        },
+        {
+          "table": "RUNNING-INFO",
+          "field": "auto_duration_since_power_on_(s)",
+          "desc": "本次上电周期（截至此行日志打印时间）的累计智驾时间，单位（s）",
+          "detail": ""
+        },
+        {
+          "table": "RUNNING-INFO",
+          "field": "dis_since_power_on_(m)",
+          "desc": "本次上电周期（截至此行日志打印时间）的累计里程（人驾+智驾）（m）",
+          "detail": ""
+        },
+        {
+          "table": "RUNNING-INFO",
+          "field": "dis_in_last_5s_(m)",
+          "desc": "此用户过去5s的行驶里程（人驾+智驾）（m）",
+          "detail": ""
+        },
+        {
+          "table": "RUNNING-INFO",
+          "field": "road_class",
+          "desc": "道路等级，来自导航信息",
+          "detail": "0x0=RoadClassFreeway; /**< 高速公路 */ 0x1=RoadClassNationalRoad; /**< 国道 */ 0x2=RoadClassProvinceRoad; /**< 省道 */ 0x3=RoadClassCountyRoad; /**< 县道 */ 0x4=RoadClassRuralRoad; /**< 乡公路 */ 0x5=RoadClassInCountyRoad; /**< 县乡村内部道路 */ 0x6=RoadClassCitySpeedway; /**< 主要大街、城市快速道 */ 0x7=RoadClassMainRoad; /**< 主要道路 */ 0x8=RoadClassSecondaryRoad; /**< 次要道路 */ 0x9=RoadClassCommonRoad; /**< 普通道路 */ 0xA=RoadClassNonNaviRoad; /**< 非导航道路 */ 0xFF=RoadClassNULL"
+        },
+        {
+          "table": "RUNNING-INFO",
+          "field": "highest_function_level",
+          "desc": "当前能进的最高智驾等级",
+          "detail": "MANUAL, // 手动驾驶\nACC, // ACC 自动驾驶\nCP, // CP 自动驾驶 \nHNP, // HNP 自动驾驶\nRNP,//RNP NP漫游\nUNP, // UNP 自动驾驶"
+        }
+      ]
+    },
+    {
+      "tableName": "NAVI-TRIP",
+      "fields": [
+        {
+          "table": "NAVI-TRIP",
+          "field": "duration_s",
+          "desc": "本次导航持续时间，日志时间- duration_s = 导航进入时刻",
+          "detail": "2026-03-16 00:00:00"
+        },
+        {
+          "table": "NAVI-TRIP",
+          "field": "pg",
+          "desc": "导航开启过程中最后一帧有效经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "AUTO-INFO",
+      "fields": [
+        {
+          "table": "AUTO-INFO",
+          "field": "auto_dis_in_last_duration_(m)",
+          "desc": "本次 智驾 开启距离，单位（m）（包含所有功能，只要智驾控车就算智驾开启）",
+          "detail": "AUTO-INFO 的含义是底盘控车的维度，\n1次AUTO-INFO，代表1次智驾控车开始到结束的完整时间段\n每次智驾控车结束打印AUTO-INFO\n比如 unp->CP->ACC->manual， 1次完整的控车产生1次AUTO-INFO"
+        },
+        {
+          "table": "AUTO-INFO",
+          "field": "auto_dis_since_power_on_(m)",
+          "desc": "【建议不要用这个，用单次的进行累加会更准】本次上电周期内（截至此行日志打印时间）的 智驾累计行驶距离",
+          "detail": ""
+        },
+        {
+          "table": "AUTO-INFO",
+          "field": "auto_duration_(s)",
+          "desc": "本次 智驾 开启时间，单位（s）",
+          "detail": ""
+        },
+        {
+          "table": "AUTO-INFO",
+          "field": "auto_duration_since_power_on_(s)",
+          "desc": "【建议不要用这个，用单次的进行累加会更准】上电周期内（截至此行日志打印时间）的 智驾 累计开启时间，单位（s）",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "ACC-INFO",
+      "fields": [
+        {
+          "table": "ACC-INFO",
+          "field": "acc_dis_in_last_duration_(m)",
+          "desc": "本次 ACC开启距离，单位（m）",
+          "detail": ""
+        },
+        {
+          "table": "ACC-INFO",
+          "field": "acc_duration_(s)",
+          "desc": "本次 ACC 开启时间，单位（s）",
+          "detail": ""
+        },
+        {
+          "table": "ACC-INFO",
+          "field": "type",
+          "desc": "本次 ACC 退出的类型，比如从ACC推到Manual",
+          "detail": ""
+        },
+        {
+          "table": "ACC-INFO",
+          "field": "reason",
+          "desc": "退功能原因",
+          "detail": ""
+        },
+        {
+          "table": "ACC-INFO",
+          "field": "pg",
+          "desc": "功能开启过程中最后一帧有效经纬度",
+          "detail": ""
+        },
+        {
+          "table": "ACC-INFO",
+          "field": "enter_pg",
+          "desc": "功能进入时刻加偏经纬度",
+          "detail": ""
+        },
+        {
+          "table": "ACC-INFO",
+          "field": "exit_pg",
+          "desc": "功能退出时刻加偏经纬度",
+          "detail": ""
+        },
+        {
+          "table": "ACC-INFO",
+          "field": "speed_set_list",
+          "desc": "duration_ms:设定速度持续时间",
+          "detail": ""
+        },
+        {
+          "table": "ACC-INFO",
+          "field": "time_distance_set_list",
+          "desc": "dis_set_s:跟车时距设定值\n      // AGGRESIVE = 1.2s 时距实际值\n      // MODERATE_AGGRESIVE = 1.5s\n      // NORMAL = 2.0s\n      // MODERATE_CONSERVATIVE = 2.5s\n      // CONSERVATIVE = 3.0s",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "PILOT-INFO",
+      "fields": [
+        {
+          "table": "PILOT-INFO",
+          "field": "pilot_dis_in_last_duration_(m)",
+          "desc": "本次 CP（Cruise Pilot）开启距离，单位（m）",
+          "detail": ""
+        },
+        {
+          "table": "PILOT-INFO",
+          "field": "pilot_duration_(s)",
+          "desc": "本次 CP 开启时间，单位（s）",
+          "detail": ""
+        },
+        {
+          "table": "PILOT-INFO",
+          "field": "type",
+          "desc": "本次 CP 退出的类型，比如从CP退到Manual",
+          "detail": ""
+        },
+        {
+          "table": "PILOT-INFO",
+          "field": "reason",
+          "desc": "退功能原因",
+          "detail": ""
+        },
+        {
+          "table": "PILOT-INFO",
+          "field": "pg",
+          "desc": "功能开启过程中最后一帧有效经纬度",
+          "detail": ""
+        },
+        {
+          "table": "PILOT-INFO",
+          "field": "enter_pg",
+          "desc": "功能进入时刻加偏经纬度",
+          "detail": ""
+        },
+        {
+          "table": "PILOT-INFO",
+          "field": "exit_pg",
+          "desc": "功能退出时刻加偏经纬度",
+          "detail": ""
+        },
+        {
+          "table": "PILOT-INFO",
+          "field": "speed_set_list",
+          "desc": "duration_ms:设定速度持续时间",
+          "detail": ""
+        },
+        {
+          "table": "PILOT-INFO",
+          "field": "time_distance_set_list",
+          "desc": "dis_set_s:跟车时距设定值\n      // AGGRESIVE = 1.2s 时距实际值\n      // MODERATE_AGGRESIVE = 1.5s\n      // NORMAL = 2.0s\n      // MODERATE_CONSERVATIVE = 2.5s\n      // CONSERVATIVE = 3.0s",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "V2-MNP-INFO",
+      "fields": [
+        {
+          "table": "V2-MNP-INFO",
+          "field": "mnp_distance_m",
+          "desc": "本次 MNP（Memory Navigation Pilot）开启距离，单位（m）",
+          "detail": "2026-0302"
+        },
+        {
+          "table": "V2-MNP-INFO",
+          "field": "mnp_duration_s",
+          "desc": "本次 MNP 开启时间，单位（s）",
+          "detail": ""
+        },
+        {
+          "table": "V2-MNP-INFO",
+          "field": "type",
+          "desc": "本次 MNP 退出的类型，比如从MNP退到Manual",
+          "detail": ""
+        },
+        {
+          "table": "V2-MNP-INFO",
+          "field": "reason",
+          "desc": "退功能原因",
+          "detail": ""
+        },
+        {
+          "table": "V2-MNP-INFO",
+          "field": "pg",
+          "desc": "功能开启过程中最后一帧有效经纬度",
+          "detail": ""
+        },
+        {
+          "table": "V2-MNP-INFO",
+          "field": "enter_pg",
+          "desc": "功能进入时刻加偏经纬度",
+          "detail": ""
+        },
+        {
+          "table": "V2-MNP-INFO",
+          "field": "exit_pg",
+          "desc": "功能退出时刻加偏经纬度",
+          "detail": ""
+        },
+        {
+          "table": "V2-MNP-INFO",
+          "field": "speed_set_list",
+          "desc": "duration_ms:设定速度持续时间",
+          "detail": ""
+        },
+        {
+          "table": "V2-MNP-INFO",
+          "field": "time_distance_set_list",
+          "desc": "dis_set_s:跟车时距设定值\n      // AGGRESIVE = 1.2s 时距实际值\n      // MODERATE_AGGRESIVE = 1.5s\n      // NORMAL = 2.0s\n      // MODERATE_CONSERVATIVE = 2.5s\n      // CONSERVATIVE = 3.0s",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "HNP-INFO",
+      "fields": [
+        {
+          "table": "HNP-INFO",
+          "field": "hnp_dis_in_last_duration_(m)",
+          "desc": "本次 HNP 开启距离，单位（m）",
+          "detail": ""
+        },
+        {
+          "table": "HNP-INFO",
+          "field": "hnp_duration_(s)",
+          "desc": "本次 HNP 开启时间，单位（s）",
+          "detail": ""
+        },
+        {
+          "table": "HNP-INFO",
+          "field": "type",
+          "desc": "EXIT:NP功能退出/CHANGE:HNP切换到UNP",
+          "detail": ""
+        },
+        {
+          "table": "HNP-INFO",
+          "field": "enter_pg",
+          "desc": "功能进入时刻加偏经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "UNP-INFO",
+      "fields": [
+        {
+          "table": "UNP-INFO",
+          "field": "unp_dis_in_last_duration_(m)",
+          "desc": "本次 UNP 开启距离，单位（m）",
+          "detail": ""
+        },
+        {
+          "table": "UNP-INFO",
+          "field": "unp_duration_(s)",
+          "desc": "本次 UNP 开启时间，单位（s）",
+          "detail": ""
+        },
+        {
+          "table": "UNP-INFO",
+          "field": "type",
+          "desc": "EXIT:NP功能退出/CHANGE:UNP切换到HNP",
+          "detail": ""
+        },
+        {
+          "table": "UNP-INFO",
+          "field": "enter_pg",
+          "desc": "功能进入时刻加偏经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "NP-INFO",
+      "fields": [
+        {
+          "table": "NP-INFO",
+          "field": "np_dis_in_last_duration_(m)",
+          "desc": "本次 NP 开启距离，单位（m）",
+          "detail": ""
+        },
+        {
+          "table": "NP-INFO",
+          "field": "np_duration_(s)",
+          "desc": "本次 NP 开启时间，单位（s）",
+          "detail": ""
+        },
+        {
+          "table": "NP-INFO",
+          "field": "type",
+          "desc": "本次 NP 退出的类型，比如从NP推到Manual",
+          "detail": ""
+        },
+        {
+          "table": "NP-INFO",
+          "field": "reason",
+          "desc": "退功能原因",
+          "detail": ""
+        },
+        {
+          "table": "NP-INFO",
+          "field": "pg",
+          "desc": "功能开启过程中最后一帧有效经纬度",
+          "detail": ""
+        },
+        {
+          "table": "NP-INFO",
+          "field": "enter_pg",
+          "desc": "功能进入时刻加偏经纬度",
+          "detail": ""
+        },
+        {
+          "table": "NP-INFO",
+          "field": "exit_pg",
+          "desc": "功能退出时刻加偏经纬度",
+          "detail": ""
+        },
+        {
+          "table": "NP-INFO",
+          "field": "np_type",
+          "desc": "NP退出时刻类型：HNP/UNP",
+          "detail": ""
+        },
+        {
+          "table": "NP-INFO",
+          "field": "speed_set_list",
+          "desc": "duration_ms:设定速度持续时间",
+          "detail": ""
+        },
+        {
+          "table": "NP-INFO",
+          "field": "time_distance_set_list",
+          "desc": "dis_set_s:跟车时距设定值\n      // AGGRESIVE = 1.2s 时距实际值\n      // MODERATE_AGGRESIVE = 1.5s\n      // NORMAL = 2.0s\n      // MODERATE_CONSERVATIVE = 2.5s\n      // CONSERVATIVE = 3.0s",
+          "detail": ""
+        },
+        {
+          "table": "NP-INFO",
+          "field": "lateral_dodge_info_list",
+          "desc": "enter_utc_ms:车道内避让开始时间",
+          "detail": ""
+        },
+        {
+          "table": "NP-INFO",
+          "field": "lane_borrow_info_list",
+          "desc": "enter_utc_ms:借道避让开始时间",
+          "detail": ""
+        },
+        {
+          "table": "NP-INFO",
+          "field": "uturn_info_list",
+          "desc": "enter_utc_ms:掉头开始时间",
+          "detail": ""
+        },
+        {
+          "table": "NP-INFO",
+          "field": "intersection_info_list",
+          "desc": "enter_utc_ms:过路口开始时间",
+          "detail": ""
+        },
+        {
+          "table": "NP-INFO",
+          "field": "cutin_info_list",
+          "desc": "enter_utc_ms:应对cutin开始时间",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "V2-RNP-INFO",
+      "fields": [
+        {
+          "table": "V2-RNP-INFO",
+          "field": "rnp_dis_m",
+          "desc": "本次 RNP 开启距离，单位（m）",
+          "detail": "26-06-12新增"
+        },
+        {
+          "table": "V2-RNP-INFO",
+          "field": "rnp_duration_s",
+          "desc": "本次 RNP 开启时间，单位（s）",
+          "detail": ""
+        },
+        {
+          "table": "V2-RNP-INFO",
+          "field": "type",
+          "desc": "本次 RNP 退出的类型，比如从RNP推到Manual",
+          "detail": ""
+        },
+        {
+          "table": "V2-RNP-INFO",
+          "field": "reason",
+          "desc": "退功能原因",
+          "detail": ""
+        },
+        {
+          "table": "V2-RNP-INFO",
+          "field": "pg",
+          "desc": "功能开启过程中最后一帧有效经纬度",
+          "detail": ""
+        },
+        {
+          "table": "V2-RNP-INFO",
+          "field": "enter_pg",
+          "desc": "功能进入时刻加偏经纬度",
+          "detail": ""
+        },
+        {
+          "table": "V2-RNP-INFO",
+          "field": "exit_pg",
+          "desc": "功能退出时刻加偏经纬度",
+          "detail": ""
+        },
+        {
+          "table": "V2-RNP-INFO",
+          "field": "speed_set_list",
+          "desc": "duration_ms:设定速度持续时间",
+          "detail": ""
+        },
+        {
+          "table": "V2-RNP-INFO",
+          "field": "time_distance_set_list",
+          "desc": "dis_set_s:跟车时距设定值\n      // AGGRESIVE = 1.2s 时距实际值\n      // MODERATE_AGGRESIVE = 1.5s\n      // NORMAL = 2.0s\n      // MODERATE_CONSERVATIVE = 2.5s\n      // CONSERVATIVE = 3.0s",
+          "detail": ""
+        },
+        {
+          "table": "V2-RNP-INFO",
+          "field": "lateral_dodge_info_list",
+          "desc": "enter_utc_ms:车道内避让开始时间",
+          "detail": ""
+        },
+        {
+          "table": "V2-RNP-INFO",
+          "field": "lane_borrow_info_list",
+          "desc": "enter_utc_ms:借道避让开始时间",
+          "detail": ""
+        },
+        {
+          "table": "V2-RNP-INFO",
+          "field": "uturn_info_list",
+          "desc": "enter_utc_ms:掉头开始时间",
+          "detail": ""
+        },
+        {
+          "table": "V2-RNP-INFO",
+          "field": "intersection_info_list",
+          "desc": "enter_utc_ms:过路口开始时间",
+          "detail": ""
+        },
+        {
+          "table": "V2-RNP-INFO",
+          "field": "cutin_info_list",
+          "desc": "enter_utc_ms:应对cutin开始时间",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "APA-INFO",
+      "fields": [
+        {
+          "table": "APA-INFO",
+          "field": "apa_end_status",
+          "desc": "本次APA结束状态 2 成功，1 退出",
+          "detail": ""
+        },
+        {
+          "table": "APA-INFO",
+          "field": "apa_parking_duration_(s)",
+          "desc": "本次APA泊车总时长",
+          "detail": ""
+        },
+        {
+          "table": "APA-INFO",
+          "field": "apa_pausing_duration_(s)",
+          "desc": "本次APA暂停总时长",
+          "detail": ""
+        },
+        {
+          "table": "APA-INFO",
+          "field": "apa_prk_dis_in_this_duration_(m)",
+          "desc": "本次APA泊车距离，单位m",
+          "detail": ""
+        },
+        {
+          "table": "APA-INFO",
+          "field": "apa_seeking_duration_(s)",
+          "desc": "本次APA泊车时间，单位s",
+          "detail": ""
+        },
+        {
+          "table": "APA-INFO",
+          "field": "gear_switch_times",
+          "desc": "本次APA揉库次数（R D切换）",
+          "detail": ""
+        },
+        {
+          "table": "APA-INFO",
+          "field": "type",
+          "desc": "本次APA退出类型，例如APA泊入到Manual",
+          "detail": ""
+        },
+        {
+          "table": "APA-INFO",
+          "field": "reason",
+          "desc": "退功能原因",
+          "detail": ""
+        },
+        {
+          "table": "APA-INFO",
+          "field": "pg",
+          "desc": "泊车中有效经纬度",
+          "detail": ""
+        },
+        {
+          "table": "APA-INFO",
+          "field": "slot_type",
+          "desc": "车位类型\nuint8 UNKOWN = 0 未知类型\nuint8 VERTICAL = 1 垂直车位\nuint8 = 2 水平车位\nuint8 NORMAL_DIAGONAL = 3 斜向车位\nuint8 ORTHOGON_DIAGONAL = 4 正交斜向车位",
+          "detail": ""
+        },
+        {
+          "table": "APA-INFO",
+          "field": "charge_property",
+          "desc": "车位属性\nDEFAULT = 0 普通车位\nCHARGEABLE = 1 充电车位 \nMECHANICAL = 2 机械车位\nFORBIDDEN = 4 禁停车位",
+          "detail": ""
+        },
+        {
+          "table": "APA-INFO",
+          "field": "is_narrow_slot",
+          "desc": "是否窄车位：true/false",
+          "detail": ""
+        },
+        {
+          "table": "APA-INFO",
+          "field": "parking_direction",
+          "desc": "泊入方向\n车头泊入= 2001\n车尾泊入 = 2002",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "V2-AVP-PARKINGIN-INFO",
+      "fields": [
+        {
+          "table": "V2-AVP-PARKINGIN-INFO",
+          "field": "apa_end_status",
+          "desc": "本次AVP结束状态 2 成功，1 退出",
+          "detail": ""
+        },
+        {
+          "table": "V2-AVP-PARKINGIN-INFO",
+          "field": "apa_parking_duration_(s)",
+          "desc": "本次AVP泊车总时长",
+          "detail": ""
+        },
+        {
+          "table": "V2-AVP-PARKINGIN-INFO",
+          "field": "apa_pausing_duration_(s)",
+          "desc": "本次AVP暂停总时长",
+          "detail": ""
+        },
+        {
+          "table": "V2-AVP-PARKINGIN-INFO",
+          "field": "apa_prk_dis_in_this_duration_(m)",
+          "desc": "本次AVP泊车距离，单位m",
+          "detail": ""
+        },
+        {
+          "table": "V2-AVP-PARKINGIN-INFO",
+          "field": "apa_seeking_duration_(s)",
+          "desc": "本次AVP泊车时间，单位s",
+          "detail": ""
+        },
+        {
+          "table": "V2-AVP-PARKINGIN-INFO",
+          "field": "gear_switch_times",
+          "desc": "本次AVP揉库次数（R D切换）",
+          "detail": ""
+        },
+        {
+          "table": "V2-AVP-PARKINGIN-INFO",
+          "field": "type",
+          "desc": "本次AVP退出类型，例如AVP泊入到Manual",
+          "detail": ""
+        },
+        {
+          "table": "V2-AVP-PARKINGIN-INFO",
+          "field": "reason",
+          "desc": "退功能原因",
+          "detail": ""
+        },
+        {
+          "table": "V2-AVP-PARKINGIN-INFO",
+          "field": "pg",
+          "desc": "泊车中有效经纬度",
+          "detail": ""
+        },
+        {
+          "table": "V2-AVP-PARKINGIN-INFO",
+          "field": "slot_type",
+          "desc": "车位类型\nuint8 UNKOWN = 0 未知类型\nuint8 VERTICAL = 1 垂直车位\nuint8 = 2 水平车位\nuint8 NORMAL_DIAGONAL = 3 斜向车位\nuint8 ORTHOGON_DIAGONAL = 4 正交斜向车位",
+          "detail": ""
+        },
+        {
+          "table": "V2-AVP-PARKINGIN-INFO",
+          "field": "charge_property",
+          "desc": "车位属性\nDEFAULT = 0 普通车位\nCHARGEABLE = 1 充电车位 \nMECHANICAL = 2 机械车位",
+          "detail": ""
+        },
+        {
+          "table": "V2-AVP-PARKINGIN-INFO",
+          "field": "is_narrow_slot",
+          "desc": "是否窄车位：true/false",
+          "detail": ""
+        },
+        {
+          "table": "V2-AVP-PARKINGIN-INFO",
+          "field": "parking_direction",
+          "desc": "泊入方向\n车头泊入= 2001\n车尾泊入 = 2002",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "V2-LPNPIN-CRUISING-INFO",
+      "fields": [
+        {
+          "table": "V2-LPNPIN-CRUISING-INFO",
+          "field": "cruising_distance_m",
+          "desc": "自动巡航距离，单位m",
+          "detail": ""
+        },
+        {
+          "table": "V2-LPNPIN-CRUISING-INFO",
+          "field": "cruising_duration_s",
+          "desc": "自动巡航时间，单位s",
+          "detail": ""
+        },
+        {
+          "table": "V2-LPNPIN-CRUISING-INFO",
+          "field": "cruising_exit_reason",
+          "desc": "自动巡航退出原因",
+          "detail": ""
+        },
+        {
+          "table": "V2-LPNPIN-CRUISING-INFO",
+          "field": "cruising_pausing_duration_s",
+          "desc": "自动巡航暂停持续时间",
+          "detail": ""
+        },
+        {
+          "table": "V2-LPNPIN-CRUISING-INFO",
+          "field": "cruising_status",
+          "desc": "自动巡航结束状态 2 成功，1 退出",
+          "detail": ""
+        },
+        {
+          "table": "V2-LPNPIN-CRUISING-INFO",
+          "field": "parking_distance_m",
+          "desc": "本次泊入距离，单位m",
+          "detail": ""
+        },
+        {
+          "table": "V2-LPNPIN-CRUISING-INFO",
+          "field": "parking_duration_s",
+          "desc": "本次泊入持续时间，单位s",
+          "detail": ""
+        },
+        {
+          "table": "V2-LPNPIN-CRUISING-INFO",
+          "field": "parking_exit_reason",
+          "desc": "本次泊入退出原因",
+          "detail": ""
+        },
+        {
+          "table": "V2-LPNPIN-CRUISING-INFO",
+          "field": "parking_pausing_duration_s",
+          "desc": "本次泊入暂停时间，单位s",
+          "detail": ""
+        },
+        {
+          "table": "V2-LPNPIN-CRUISING-INFO",
+          "field": "parking_status",
+          "desc": "本次泊入结束状态 2 成功，1 退出",
+          "detail": ""
+        },
+        {
+          "table": "V2-LPNPIN-CRUISING-INFO",
+          "field": "parking_type",
+          "desc": "本次泊入类型：泊入附近车位还是泊入目标车位",
+          "detail": ""
+        },
+        {
+          "table": "V2-LPNPIN-CRUISING-INFO",
+          "field": "gear_switch_times",
+          "desc": "本次泊入揉库次数（R D切换）",
+          "detail": ""
+        },
+        {
+          "table": "V2-LPNPIN-CRUISING-INFO",
+          "field": "pg",
+          "desc": "本次LPNP中有效经纬度",
+          "detail": ""
+        },
+        {
+          "table": "V2-LPNPIN-CRUISING-INFO",
+          "field": "type",
+          "desc": "本次AVP接管类型，例如LPNP泊入到Manual",
+          "detail": ""
+        },
+        {
+          "table": "V2-LPNPIN-CRUISING-INFO",
+          "field": "slot_type",
+          "desc": "车位类型\nuint8 UNKOWN = 0 未知类型\nuint8 VERTICAL = 1 垂直车位\nuint8 = 2 水平车位\nuint8 NORMAL_DIAGONAL = 3 斜向车位\nuint8 ORTHOGON_DIAGONAL = 4 正交斜向车位",
+          "detail": ""
+        },
+        {
+          "table": "V2-LPNPIN-CRUISING-INFO",
+          "field": "charge_property",
+          "desc": "车位属性\nDEFAULT = 0 普通车位\nCHARGEABLE = 1 充电车位 \nMECHANICAL = 2 机械车位",
+          "detail": ""
+        },
+        {
+          "table": "V2-LPNPIN-CRUISING-INFO",
+          "field": "is_narrow_slot",
+          "desc": "是否窄车位：true/false",
+          "detail": ""
+        },
+        {
+          "table": "V2-LPNPIN-CRUISING-INFO",
+          "field": "parking_direction",
+          "desc": "泊入方向\n车头泊入= 2001\n车尾泊入 = 2002",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "V2-RPA-PARKINGIN-INFO",
+      "fields": [
+        {
+          "table": "V2-RPA-PARKINGIN-INFO",
+          "field": "gear_switch_times",
+          "desc": "本次泊入揉库次数（R D切换）",
+          "detail": ""
+        },
+        {
+          "table": "V2-RPA-PARKINGIN-INFO",
+          "field": "parking_distance_m",
+          "desc": "本次泊车持续里程",
+          "detail": ""
+        },
+        {
+          "table": "V2-RPA-PARKINGIN-INFO",
+          "field": "pg",
+          "desc": "本次RPA中有效经纬度",
+          "detail": ""
+        },
+        {
+          "table": "V2-RPA-PARKINGIN-INFO",
+          "field": "reason",
+          "desc": "本次RPA退出原因",
+          "detail": ""
+        },
+        {
+          "table": "V2-RPA-PARKINGIN-INFO",
+          "field": "rpa_end_status",
+          "desc": "本次RPA结束状态 2 成功，1 退出",
+          "detail": ""
+        },
+        {
+          "table": "V2-RPA-PARKINGIN-INFO",
+          "field": "rpa_parking_duration_(s)",
+          "desc": "本次泊入持续总时间，单位s",
+          "detail": ""
+        },
+        {
+          "table": "V2-RPA-PARKINGIN-INFO",
+          "field": "rpa_pausing_duration_(s)",
+          "desc": "本次泊入暂停总时间，单位s",
+          "detail": ""
+        },
+        {
+          "table": "V2-RPA-PARKINGIN-INFO",
+          "field": "type",
+          "desc": "本次RPA退出类型，例如RPA泊入到Manual",
+          "detail": ""
+        },
+        {
+          "table": "V2-RPA-PARKINGIN-INFO",
+          "field": "slot_type",
+          "desc": "车位类型\nuint8 UNKOWN = 0 未知类型\nuint8 VERTICAL = 1 垂直车位\nuint8 = 2 水平车位\nuint8 NORMAL_DIAGONAL = 3 斜向车位\nuint8 ORTHOGON_DIAGONAL = 4 正交斜向车位",
+          "detail": ""
+        },
+        {
+          "table": "V2-RPA-PARKINGIN-INFO",
+          "field": "charge_property",
+          "desc": "车位属性\nDEFAULT = 0 普通车位\nCHARGEABLE = 1 充电车位 \nMECHANICAL = 2 机械车位",
+          "detail": ""
+        },
+        {
+          "table": "V2-RPA-PARKINGIN-INFO",
+          "field": "is_narrow_slot",
+          "desc": "是否窄车位：true/false",
+          "detail": ""
+        },
+        {
+          "table": "V2-RPA-PARKINGIN-INFO",
+          "field": "parking_direction",
+          "desc": "泊入方向\n车头泊入= 2001\n车尾泊入 = 2002",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "V2-RADS-INFO",
+      "fields": [
+        {
+          "table": "V2-RADS-INFO",
+          "field": "rads_distance_(m)",
+          "desc": "本次RADS持续里程",
+          "detail": ""
+        },
+        {
+          "table": "V2-RADS-INFO",
+          "field": "rads_duration_(s)",
+          "desc": "本次RADS倒车总时间，单位s",
+          "detail": ""
+        },
+        {
+          "table": "V2-RADS-INFO",
+          "field": "rads_pausing_duration_(s)",
+          "desc": "本次RADS暂停总时间，单位s",
+          "detail": ""
+        },
+        {
+          "table": "V2-RADS-INFO",
+          "field": "rads_end_status",
+          "desc": "本次RADS结束状态 2 成功，1 退出",
+          "detail": ""
+        },
+        {
+          "table": "V2-RADS-INFO",
+          "field": "reason",
+          "desc": "本次LRAS退出原因",
+          "detail": ""
+        },
+        {
+          "table": "V2-RADS-INFO",
+          "field": "type",
+          "desc": "本次LRAS退出类型，例如RADS泊入到Manual",
+          "detail": ""
+        },
+        {
+          "table": "V2-RADS-INFO",
+          "field": "pg",
+          "desc": "本次RADS中有效经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "CMD-RECEIVED",
+      "fields": [
+        {
+          "table": "CMD-RECEIVED",
+          "field": "target_function",
+          "desc": "用户目标进入功能（e.g.软开关）",
+          "detail": ""
+        },
+        {
+          "table": "CMD-RECEIVED",
+          "field": "odd_function",
+          "desc": "实车所处ODD功能",
+          "detail": ""
+        },
+        {
+          "table": "CMD-RECEIVED",
+          "field": "enter_function",
+          "desc": "车辆被智驾请求后实际最终进入的功能",
+          "detail": ""
+        },
+        {
+          "table": "CMD-RECEIVED",
+          "field": "cur_pg",
+          "desc": "发起智驾进入请求时刻的经纬度",
+          "detail": ""
+        },
+        {
+          "table": "CMD-RECEIVED",
+          "field": "odd_trigger_fail_reason",
+          "desc": "要进odd_function但只进了enter_function的原因（reason清单跟功能退出一致）",
+          "detail": ""
+        },
+        {
+          "table": "CMD-RECEIVED",
+          "field": "odd_unsatisfied_reason",
+          "desc": "要进target_function，但是odd不满足的原因（reason清单跟功能退出一致）",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "LANE-CHANGE-INFO",
+      "fields": [
+        {
+          "table": "LANE-CHANGE-INFO",
+          "field": "direction",
+          "desc": "-1-未变道 0-向左  1-向右",
+          "detail": ""
+        },
+        {
+          "table": "LANE-CHANGE-INFO",
+          "field": "duration_ms",
+          "desc": "变道持续时间",
+          "detail": ""
+        },
+        {
+          "table": "LANE-CHANGE-INFO",
+          "field": "type",
+          "desc": "20007：交互式变道",
+          "detail": ""
+        },
+        {
+          "table": "LANE-CHANGE-INFO",
+          "field": "function",
+          "desc": "UNP,HNP,RNP",
+          "detail": ""
+        },
+        {
+          "table": "LANE-CHANGE-INFO",
+          "field": "result",
+          "desc": "0-等待1-进行2-退回3-取消4-完成 5-准备",
+          "detail": ""
+        },
+        {
+          "table": "LANE-CHANGE-INFO",
+          "field": "return_reason",
+          "desc": "0：未变道返回\n1：驾驶员拨杆取消变道返回\n2：算法自主变道返回",
+          "detail": ""
+        },
+        {
+          "table": "LANE-CHANGE-INFO",
+          "field": "enter_pg",
+          "desc": "功能进入时刻加偏经纬度",
+          "detail": ""
+        },
+        {
+          "table": "LANE-CHANGE-INFO",
+          "field": "exit_pg",
+          "desc": "功能退出时刻加偏经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "V2-APA-PARKINGOUT-INFO",
+      "fields": [
+        {
+          "table": "V2-APA-PARKINGOUT-INFO",
+          "field": "gear_switch_times",
+          "desc": "本次泊入揉库次数（R D切换）",
+          "detail": ""
+        },
+        {
+          "table": "V2-APA-PARKINGOUT-INFO",
+          "field": "apa_prk_dis_in_this_duration_(m)",
+          "desc": "本次泊车持续里程",
+          "detail": ""
+        },
+        {
+          "table": "V2-APA-PARKINGOUT-INFO",
+          "field": "pg",
+          "desc": "本次APA-泊出中有效经纬度",
+          "detail": ""
+        },
+        {
+          "table": "V2-APA-PARKINGOUT-INFO",
+          "field": "reason",
+          "desc": "本次APA-泊出的退出原因",
+          "detail": ""
+        },
+        {
+          "table": "V2-APA-PARKINGOUT-INFO",
+          "field": "apa_end_status",
+          "desc": "本次APA-泊出结束状态 2 成功，1 退出",
+          "detail": ""
+        },
+        {
+          "table": "V2-APA-PARKINGOUT-INFO",
+          "field": "apa_parking_duration_(s)",
+          "desc": "本次APA-泊出持续(控车的)总时间，单位s",
+          "detail": ""
+        },
+        {
+          "table": "V2-APA-PARKINGOUT-INFO",
+          "field": "apa_pausing_duration_(s)",
+          "desc": "本次APA-泊出暂停总时间，单位s",
+          "detail": ""
+        },
+        {
+          "table": "V2-APA-PARKINGOUT-INFO",
+          "field": "apa_seeking_duration_(s)",
+          "desc": "本次APA-泊出巡库总时间，单位s",
+          "detail": ""
+        },
+        {
+          "table": "V2-APA-PARKINGOUT-INFO",
+          "field": "type",
+          "desc": "本次APA退出类型，例如APA泊出到Manual",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "V2-RPA-PARKINGOUT-INFO",
+      "fields": [
+        {
+          "table": "V2-RPA-PARKINGOUT-INFO",
+          "field": "gear_switch_times",
+          "desc": "本次泊出揉库次数（R D切换）",
+          "detail": ""
+        },
+        {
+          "table": "V2-RPA-PARKINGOUT-INFO",
+          "field": "parking_distance_m",
+          "desc": "本次泊出持续里程",
+          "detail": ""
+        },
+        {
+          "table": "V2-RPA-PARKINGOUT-INFO",
+          "field": "pg",
+          "desc": "本次RPA中有效经纬度",
+          "detail": ""
+        },
+        {
+          "table": "V2-RPA-PARKINGOUT-INFO",
+          "field": "reason",
+          "desc": "本次RPA退出原因",
+          "detail": ""
+        },
+        {
+          "table": "V2-RPA-PARKINGOUT-INFO",
+          "field": "rpa_end_status",
+          "desc": "本次RPA结束状态 2 成功，1 退出",
+          "detail": ""
+        },
+        {
+          "table": "V2-RPA-PARKINGOUT-INFO",
+          "field": "parking_duration_s",
+          "desc": "本次泊出持续总时间，单位s",
+          "detail": ""
+        },
+        {
+          "table": "V2-RPA-PARKINGOUT-INFO",
+          "field": "pausing_duration_s",
+          "desc": "本次泊出暂停总时间，单位s",
+          "detail": ""
+        },
+        {
+          "table": "V2-RPA-PARKINGOUT-INFO",
+          "field": "type",
+          "desc": "本次RPA退出类型，例如RPA泊出到Manual",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "V2-NSP-INFO",
+      "fields": [
+        {
+          "table": "V2-NSP-INFO",
+          "field": "nsp_distance_(m)",
+          "desc": "本次NSP持续里程",
+          "detail": "2026-0209"
+        },
+        {
+          "table": "V2-NSP-INFO",
+          "field": "nsp_duration_(s)",
+          "desc": "本次NSP控车持续总时间，单位s",
+          "detail": ""
+        },
+        {
+          "table": "V2-NSP-INFO",
+          "field": "nsp_end_status",
+          "desc": "本次NSP结束状态 2 成功，1 退出",
+          "detail": ""
+        },
+        {
+          "table": "V2-NSP-INFO",
+          "field": "nsp_pause_duration_(s)",
+          "desc": "本次NSP暂停总时间，单位s",
+          "detail": ""
+        },
+        {
+          "table": "V2-NSP-INFO",
+          "field": "pg",
+          "desc": "本次NSP中有效经纬度",
+          "detail": ""
+        },
+        {
+          "table": "V2-NSP-INFO",
+          "field": "reason",
+          "desc": "本次RPA退出原因",
+          "detail": ""
+        },
+        {
+          "table": "V2-NSP-INFO",
+          "field": "type",
+          "desc": "本次RPA退出类型，例如RPA泊入到Manual",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "MRM-INFO",
+      "fields": [
+        {
+          "table": "MRM-INFO",
+          "field": "distance_m",
+          "desc": "本次MRM持续里程，m",
+          "detail": "2026-0209"
+        },
+        {
+          "table": "MRM-INFO",
+          "field": "duration_ms",
+          "desc": "本次MRM持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "MRM-INFO",
+          "field": "pg",
+          "desc": "本次MRM触发位置",
+          "detail": ""
+        },
+        {
+          "table": "MRM-INFO",
+          "field": "reason",
+          "desc": "本次MRM退出原因\n1-舒适车道内刹停MRM\n2-舒适靠边刹停MRM",
+          "detail": ""
+        },
+        {
+          "table": "MRM-INFO",
+          "field": "type",
+          "desc": "1-脱手， 2-分心，3-疲劳",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "D2D-INFO",
+      "fields": [
+        {
+          "table": "D2D-INFO",
+          "field": "d2d_dis_m",
+          "desc": "本次 D2D开启距离，单位（m）",
+          "detail": "2026-08-26 00:00:00"
+        },
+        {
+          "table": "D2D-INFO",
+          "field": "d2d_duration_s",
+          "desc": "本次 D2D开启时间，单位（s）",
+          "detail": ""
+        },
+        {
+          "table": "D2D-INFO",
+          "field": "pg",
+          "desc": "功能开启过程中最后一帧有效经纬度",
+          "detail": ""
+        },
+        {
+          "table": "D2D-INFO",
+          "field": "enter_pg",
+          "desc": "功能进入时刻加偏经纬度",
+          "detail": ""
+        },
+        {
+          "table": "D2D-INFO",
+          "field": "exit_pg",
+          "desc": "功能退出时刻加偏经纬度",
+          "detail": ""
+        },
+        {
+          "table": "D2D-INFO",
+          "field": "np_distance_m",
+          "desc": "本次 D2D过程中，NP状态的总开启距离，单位（m）",
+          "detail": ""
+        },
+        {
+          "table": "D2D-INFO",
+          "field": "np_duration_s",
+          "desc": "本次 D2D过程中，NP状态的总开启时间，单位（s）",
+          "detail": ""
+        },
+        {
+          "table": "D2D-INFO",
+          "field": "parking_distance_m",
+          "desc": "本次 D2D过程中，pakring状态的总开启距离，单位（m）",
+          "detail": ""
+        },
+        {
+          "table": "D2D-INFO",
+          "field": "parking_duration_s",
+          "desc": "本次 D2D过程中，pakring状态的总开启时间，单位（s）",
+          "detail": ""
+        },
+        {
+          "table": "D2D-INFO",
+          "field": "type",
+          "desc": "D2Dstate:0-off,1 passive，2-standby,3-parking_activce,4-driving_activce\ntype = {src_state}To{tgt_state}",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "V2-L4-INFO",
+      "fields": [
+        {
+          "table": "V2-L4-INFO",
+          "field": "L4_dis_m",
+          "desc": "本次 L4开启距离，单位（m）",
+          "detail": "2026-08-26 00:00:00"
+        },
+        {
+          "table": "V2-L4-INFO",
+          "field": "L4_duration_s",
+          "desc": "本次 L4开启时间，单位（s）",
+          "detail": ""
+        },
+        {
+          "table": "V2-L4-INFO",
+          "field": "pg",
+          "desc": "功能开启过程中最后一帧有效经纬度",
+          "detail": ""
+        },
+        {
+          "table": "V2-L4-INFO",
+          "field": "enter_pg",
+          "desc": "功能进入时刻加偏经纬度",
+          "detail": ""
+        },
+        {
+          "table": "V2-L4-INFO",
+          "field": "exit_pg",
+          "desc": "功能退出时刻加偏经纬度",
+          "detail": ""
+        },
+        {
+          "table": "V2-L4-INFO",
+          "field": "type",
+          "desc": "本次L4退出的类型，比如从Active退到Off",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "MD-NODE-STATUS-INFO-END",
+      "fields": [
+        {
+          "table": "MD-NODE-STATUS-INFO-END",
+          "field": "falling_codes",
+          "desc": "（日志答应时刻的）错误码下降沿（结束）集合，是个数组",
+          "detail": ""
+        },
+        {
+          "table": "MD-NODE-STATUS-INFO-END",
+          "field": "code",
+          "desc": "错误码的10进制",
+          "detail": ""
+        },
+        {
+          "table": "MD-NODE-STATUS-INFO-END",
+          "field": "duration_ms",
+          "desc": "错误码持续时间，单位ms，错误码结束时间（此日志时间） -  持续时间 =错误码开始时间",
+          "detail": "防止下电数据都是，挂P档会强行补一个下降沿记录"
+        }
+      ]
+    },
+    {
+      "tableName": "LDW-ACTIVATE",
+      "fields": [
+        {
+          "table": "LDW-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "LDW-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "LKA-ACTIVATE",
+      "fields": [
+        {
+          "table": "LKA-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "LKA-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "ELK-RE-ACTIVATE",
+      "fields": [
+        {
+          "table": "ELK-RE-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "ELK-RE-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "ELK-OC-ACTIVATE",
+      "fields": [
+        {
+          "table": "ELK-OC-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "ELK-OC-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "ELK-OT-ACTIVATE",
+      "fields": [
+        {
+          "table": "ELK-OT-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "ELK-OT-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "CMSR-ACTIVATE",
+      "fields": [
+        {
+          "table": "CMSR-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "CMSR-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "SLIF-ACTIVATE",
+      "fields": [
+        {
+          "table": "SLIF-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "SLIF-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "IHC-ACTIVATE",
+      "fields": [
+        {
+          "table": "IHC-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "IHC-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "ADB-ACTIVATE",
+      "fields": [
+        {
+          "table": "ADB-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "ADB-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "AELK-ACTIVATE",
+      "fields": [
+        {
+          "table": "AELK-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "AELK-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "ESS-ACTIVATE",
+      "fields": [
+        {
+          "table": "ESS-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "ESS-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "AES-ACTIVATE",
+      "fields": [
+        {
+          "table": "AES-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "AES-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "CDW-ACTIVATE",
+      "fields": [
+        {
+          "table": "CDW-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "CDW-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "FCW-ACTIVATE",
+      "fields": [
+        {
+          "table": "FCW-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "FCW-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "AWB-ACTIVATE",
+      "fields": [
+        {
+          "table": "AWB-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "AWB-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "AEB-PB-ACTIVATE",
+      "fields": [
+        {
+          "table": "AEB-PB-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "AEB-PB-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "AEB-ACTIVATE",
+      "fields": [
+        {
+          "table": "AEB-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "AEB-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "AEB-LIM-ACTIVATE",
+      "fields": [
+        {
+          "table": "AEB-LIM-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "AEB-LIM-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "AEB-EH-ACTIVATE",
+      "fields": [
+        {
+          "table": "AEB-EH-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "AEB-EH-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "EBA-ACTIVATE",
+      "fields": [
+        {
+          "table": "EBA-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "EBA-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "FCTA-ACTIVATE",
+      "fields": [
+        {
+          "table": "FCTA-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "FCTA-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "FCTB-ACTIVATE",
+      "fields": [
+        {
+          "table": "FCTB-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "FCTB-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "RCTA-ACTIVATE",
+      "fields": [
+        {
+          "table": "RCTA-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "RCTA-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "RCTB-ACTIVATE",
+      "fields": [
+        {
+          "table": "RCTB-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "RCTB-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "MSP-WARN-ACTIVATE",
+      "fields": [
+        {
+          "table": "MSP-WARN-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "MSP-WARN-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "MSP-BRAKE-ACTIVATE",
+      "fields": [
+        {
+          "table": "MSP-BRAKE-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "MSP-BRAKE-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "RVB-WARN-ACTIVATE",
+      "fields": [
+        {
+          "table": "RVB-WARN-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "RVB-WARN-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "RVB-BRAKE-ACTIVATE",
+      "fields": [
+        {
+          "table": "RVB-BRAKE-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": ""
+        },
+        {
+          "table": "RVB-BRAKE-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "AMAP-BRAKE-ACTIVATE",
+      "fields": [
+        {
+          "table": "AMAP-BRAKE-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": "2026-03-16 00:00:00"
+        },
+        {
+          "table": "AMAP-BRAKE-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "tableName": "AMAP-LIMIT-ACTIVATE",
+      "fields": [
+        {
+          "table": "AMAP-LIMIT-ACTIVATE",
+          "field": "duration_ms",
+          "desc": "功能激活持续时间，单位ms",
+          "detail": "2026-03-16 00:00:00"
+        },
+        {
+          "table": "AMAP-LIMIT-ACTIVATE",
+          "field": "cur_pg",
+          "desc": "功能激活时经纬度",
+          "detail": ""
+        }
+      ]
+    }
+  ]
+}

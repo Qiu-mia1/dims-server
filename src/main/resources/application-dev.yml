@@ -1,0 +1,69 @@
+# ============================================================
+# DIMS 开发环境配置（覆盖 application.yml 中对应属性）
+# ============================================================
+
+spring:
+  datasource:
+    dynamic:
+      datasource:
+        master:
+          url: jdbc:postgresql://localhost:5432/dims?stringtype=unspecified
+          username: postgres
+          password: root123
+  kafka:
+    bootstrap-servers: localhost:9092
+  # ---- IAMS JWKS 端点（对接指南 §2.1 原始端点，iamsbackend 服务直连） ----
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://iamsbackend.jmc.svc:8080/iams/oauth2/jwks
+  # ---- Nacos 服务发现（默认关闭；本机有 Nacos 且需调 IAMS 时打开） ----
+  cloud:
+    nacos:
+      discovery:
+        enabled: true
+        server-addr: nacos.jmc.svc:8848
+        username: nacos
+        password: nacos
+        namespace: 30f93757-69e6-4b29-98b9-158ba34782d1
+        group: DIMS_GROUP
+      config:
+        enabled: true
+        server-addr: nacos.jmc.svc:8848
+        username: nacos
+        password: nacos
+        namespace: 30f93757-69e6-4b29-98b9-158ba34782d1
+        group: DIMS_GROUP
+    service-registry:
+      auto-registration:
+        enabled: true
+
+dims:
+  storage:
+    type: ${DIMS_STORAGE_TYPE:minio}      # minio（MinIO 对象存储，默认）/ local（本地文件系统）
+    temp-dir: ${DIMS_STORAGE_TEMP_DIR:/data/tmp}  # minio 模式本地临时目录（staging/物化缓存）
+    bag-dir: /home/nnn/project/JMC/isim-dims/dims-server/data/bags
+    export-dir: /home/nnn/project/JMC/isim-dims/dims-server/data/exports
+    replay-cache-dir: /home/nnn/project/JMC/isim-dims/dims-server/data/cache
+
+# ---- MinIO 对象存储（dims.storage.type=minio 时启用）----
+# 默认值指向本地共享开发 MinIO（ads-minio @ localhost:9000），启动无需设置环境变量；
+# 生产环境必须经环境变量覆盖。密钥零入库原则仅适用于生产，本 dev 文件落本地联调默认值。
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  access-key: ${MINIO_ACCESS_KEY:minioadmin}
+  secret-key: ${MINIO_SECRET_KEY:minioadmin}
+  bucket: ${MINIO_BUCKET:dims}
+
+# ---- 百度 BOS 对象存储配置（AWS S3 SDK V2 兼容协议访问；AK/SK 经环境变量注入）----
+bos:
+  endpoint: ${BOS_ENDPOINT:https://s3.bj.bcebos.com}
+  region: bj
+  access-key: ${BOS_ACCESS_KEY:}          # 从环境变量注入，不落明文
+  secret-key: ${BOS_SECRET_KEY:}          # 从环境变量注入，不落明文
+  bucket: ${BOS_BUCKET:}
+
+logging:
+  level:
+    com.isim.dims: DEBUG              # DIMS 包日志级别为 DEBUG

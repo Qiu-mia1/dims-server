@@ -1,0 +1,145 @@
+{
+  "comment": "CX835-MMT 摄像头/事件配置（来源：dims-python/CX835-MMT-筛选器-摄像头数据.xlsx）。分辨率策略：前视摄像头 1080P，其余 720P。点云默认不转换，本配置仅包含摄像头通道。",
+  "cameras": {
+    "F30_front_far": {
+      "display_name": "前视远焦",
+      "camera_name": "camera_front_far",
+      "topic": "/sensor/camera_front_far/video",
+      "resolution": "1080P",
+      "width": 1920,
+      "height": 1080
+    },
+    "F100_front_wide": {
+      "display_name": "前视广角",
+      "camera_name": "camera_front_wide",
+      "topic": "/sensor/camera_front_wide/video",
+      "resolution": "1080P",
+      "width": 1920,
+      "height": 1080
+    },
+    "F100_left_front": {
+      "display_name": "左前视",
+      "camera_name": "camera_left_front",
+      "topic": "/sensor/camera_left_front/video",
+      "resolution": "720P",
+      "width": 1280,
+      "height": 720
+    },
+    "F100_left_rear": {
+      "display_name": "左后视",
+      "camera_name": "camera_left_rear",
+      "topic": "/sensor/camera_left_rear/video",
+      "resolution": "720P",
+      "width": 1280,
+      "height": 720
+    },
+    "F100_right_front": {
+      "display_name": "右前视",
+      "camera_name": "camera_right_front",
+      "topic": "/sensor/camera_right_front/video",
+      "resolution": "720P",
+      "width": 1280,
+      "height": 720
+    },
+    "F100_right_rear": {
+      "display_name": "右后视",
+      "camera_name": "camera_right_rear",
+      "topic": "/sensor/camera_right_rear/video",
+      "resolution": "720P",
+      "width": 1280,
+      "height": 720
+    },
+    "F50_rear_mid": {
+      "display_name": "后视中",
+      "camera_name": "camera_rear_mid",
+      "topic": "/sensor/camera_rear_mid/video",
+      "resolution": "720P",
+      "width": 1280,
+      "height": 720
+    },
+    "F195_front_fisheye": {
+      "display_name": "前鱼眼",
+      "camera_name": "camera_front_fisheye",
+      "topic": "/sensor/camera_front_fisheye/video",
+      "resolution": "720P",
+      "width": 1280,
+      "height": 720
+    },
+    "F195_rear_fisheye": {
+      "display_name": "后鱼眼",
+      "camera_name": "camera_rear_fisheye",
+      "topic": "/sensor/camera_rear_fisheye/video",
+      "resolution": "720P",
+      "width": 1280,
+      "height": 720
+    },
+    "F195_left_fisheye": {
+      "display_name": "左鱼眼",
+      "camera_name": "camera_left_fisheye",
+      "topic": "/sensor/camera_left_fisheye/video",
+      "resolution": "720P",
+      "width": 1280,
+      "height": 720
+    },
+    "F195_right_fisheye": {
+      "display_name": "右鱼眼",
+      "camera_name": "camera_right_fisheye",
+      "topic": "/sensor/camera_right_fisheye/video",
+      "resolution": "720P",
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "events": {
+    "imu_collision": { "filter": "imu_collision", "priority": "special", "cameras": ["F100_front_wide", "F100_left_front", "F100_left_rear", "F100_right_front", "F100_right_rear", "F50_rear_mid"] },
+    "system_crash": { "filter": "system_crash", "priority": "special", "cameras": [] },
+    "high_highbeam_on": { "filter": "highbeam_on_filter", "cameras": ["F100_front_wide", "F30_front_far", "F100_left_front", "F100_left_rear", "F100_right_front", "F100_right_rear", "F50_rear_mid", "F195_front_fisheye", "F195_rear_fisheye", "F195_left_fisheye", "F195_right_fisheye"] },
+    "mid_highbeam_on": { "filter": "highbeam_on_filter", "cameras": ["F100_front_wide", "F30_front_far", "F100_left_front", "F100_left_rear", "F100_right_front", "F100_right_rear", "F50_rear_mid", "F195_front_fisheye", "F195_rear_fisheye", "F195_left_fisheye", "F195_right_fisheye"] },
+    "fushion_aeb": { "filter": "fushion_aeb", "priority": "special", "cameras": ["F100_front_wide", "F100_left_front", "F100_left_rear", "F100_right_front", "F100_right_rear", "F50_rear_mid"] },
+    "cp_aes_trig_event": { "filter": "cp_aes_trig_event", "priority": "special", "cameras": ["F100_front_wide", "F100_left_front", "F100_left_rear", "F100_right_front", "F100_right_rear", "F50_rear_mid"] },
+    "cp_ess_trig_event": { "filter": "cp_ess_trig_event", "priority": "special", "cameras": ["F100_front_wide", "F100_left_front", "F100_left_rear", "F100_right_front", "F100_right_rear", "F50_rear_mid"] },
+    "apa_all_time_event_segment": { "filter": "apa_all_time_event", "cameras": ["F195_front_fisheye", "F195_rear_fisheye", "F195_left_fisheye", "F195_right_fisheye"] },
+    "apa_simplified_event": { "filter": "apa_simplified_event", "cameras": ["F195_front_fisheye", "F195_rear_fisheye", "F195_left_fisheye", "F195_right_fisheye"] },
+    "obf_metric": { "filter": "obf_issue_filter", "cameras": [] },
+    "obf_issue": { "filter": "obf_issue_filter", "cameras": [] },
+    "meb_brake_event": { "filter": "meb_brake_event", "cameras": ["F100_front_wide", "F100_left_front", "F100_left_rear", "F100_right_front", "F100_right_rear", "F50_rear_mid"] },
+    "lpnp_emergency_event": { "filter": "lpnp_emergency_event", "cameras": ["F100_front_wide", "F100_left_front", "F100_left_rear", "F100_right_front", "F100_right_rear", "F50_rear_mid"] },
+    "lpnp_takeover": { "filter": "lpnp_takeover", "cameras": ["F100_front_wide", "F100_left_front", "F100_left_rear", "F100_right_front", "F100_right_rear", "F50_rear_mid"] },
+    "rads_takeover": { "filter": "rads_takeover", "cameras": ["F100_front_wide", "F100_left_front", "F100_left_rear", "F100_right_front", "F100_right_rear", "F50_rear_mid"] },
+    "rma_collision_event": { "filter": "rma_collision_event", "cameras": ["F100_front_wide", "F100_left_front", "F100_left_rear", "F100_right_front", "F100_right_rear", "F50_rear_mid"] },
+    "nsp_abnormal_event": { "filter": "nsp_abnormal_event", "cameras": ["F100_front_wide", "F100_left_front", "F100_left_rear", "F100_right_front", "F100_right_rear", "F50_rear_mid"] },
+    "general_collision_event": { "filter": "general_collision_event", "cameras": ["F100_front_wide", "F100_left_front", "F100_left_rear", "F100_right_front", "F100_right_rear", "F50_rear_mid"] },
+    "unp_tkov_colli": { "filter": "unp_tkov_colli", "priority": "special", "cameras": ["F100_front_wide", "F100_left_front", "F100_left_rear", "F100_right_front", "F100_right_rear", "F50_rear_mid"] },
+    "dssad_collision": { "filter": "dssad_collision", "priority": "special", "cameras": ["F100_front_wide", "F100_left_front", "F100_left_rear", "F100_right_front", "F100_right_rear", "F50_rear_mid"] },
+    "dssad_collision_locked": { "filter": "dssad_collision_locked", "priority": "special", "cameras": ["F100_front_wide", "F100_left_front", "F100_left_rear", "F100_right_front", "F100_right_rear", "F50_rear_mid"] },
+    "dbw_disabled_takeover": { "filter": "dbw_disabled_takeover", "cameras": ["F100_front_wide", "F100_left_front", "F100_left_rear", "F100_right_front", "F100_right_rear", "F50_rear_mid"] },
+    "P0_L2_ID_01": { "filter": "P0_L2_ID_01", "cameras": [] },
+    "P0_L2_ID_02": { "filter": "P0_L2_ID_02", "cameras": [] },
+    "P0_L2_ID_03": { "filter": "P0_L2_ID_03", "cameras": [] },
+    "P0_L2_ID_04": { "filter": "P0_L2_ID_04", "cameras": [] },
+    "P0_NOA_ID_01": { "filter": "P0_NOA_ID_01", "cameras": [] },
+    "P0_NOA_ID_02": { "filter": "P0_NOA_ID_02", "cameras": [] },
+    "P0_NOA_ID_03": { "filter": "P0_NOA_ID_03", "cameras": [] },
+    "P0_NOA_ID_04": { "filter": "P0_NOA_ID_04", "cameras": [] },
+    "P2_NOA_ID_05": { "filter": "P2_NOA_ID_05", "cameras": [] },
+    "P0_NOA_ID_06": { "filter": "P0_NOA_ID_06", "cameras": [] },
+    "P1_NOA_ID_07": { "filter": "P1_NOA_ID_07", "cameras": [] },
+    "P2_NOA_ID_08": { "filter": "P2_NOA_ID_08", "cameras": [] },
+    "P2_NOA_ID_09": { "filter": "P2_NOA_ID_09", "cameras": [] },
+    "P2_NOA_ID_10": { "filter": "P2_NOA_ID_10", "cameras": [] },
+    "P0_NOA_ID_11": { "filter": "P0_NOA_ID_11", "cameras": [] },
+    "P0_NOA_ID_12": { "filter": "P0_NOA_ID_12", "cameras": [] },
+    "P2_NOA_ID_13": { "filter": "P2_NOA_ID_13", "cameras": [] },
+    "P2_NOA_ID_14": { "filter": "P2_NOA_ID_14", "cameras": [] },
+    "P0_Park_ID_00": { "filter": "P0_Park_ID_00", "cameras": [] },
+    "P2_Park_ID_01": { "filter": "P2_Park_ID_01", "cameras": [] },
+    "P2_Park_ID_02": { "filter": "P2_Park_ID_02", "cameras": [] },
+    "P2_Park_ID_03": { "filter": "P2_Park_ID_03", "cameras": [] },
+    "P2_Park_ID_04": { "filter": "P2_Park_ID_04", "cameras": [] },
+    "P2_Park_ID_05": { "filter": "P2_Park_ID_05", "cameras": [] },
+    "P2_Park_ID_06": { "filter": "P2_Park_ID_06", "cameras": [] },
+    "P2_Park_ID_07": { "filter": "P2_Park_ID_07", "cameras": [] },
+    "P2_Park_ID_08": { "filter": "P2_Park_ID_08", "cameras": [] },
+    "P0_Park_ID_09": { "filter": "P0_Park_ID_09", "cameras": [] }
+  }
+}

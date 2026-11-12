@@ -1,0 +1,52 @@
+# ============================================================
+# DIMS 集成测试配置
+# ============================================================
+
+server:
+  port: 0  # random port
+
+spring:
+  datasource:
+    dynamic:
+      datasource:
+        master:
+          url: jdbc:postgresql://localhost:5432/dims?stringtype=unspecified
+          driver-class-name: org.postgresql.Driver
+          username: postgres
+          password: root123
+
+  # Run DDL migrations and seed data on startup
+  sql:
+    init:
+      mode: always
+      schema-locations:
+        - classpath:db/migration/V2__phase2_new_tables.sql
+        - classpath:db/migration/V3__cfdi_tables.sql
+        - classpath:db/migration/V4__task_status_history.sql
+        - classpath:db/migration/V6__trajectory_check_marker.sql
+        - classpath:db/migration/V19__data_slice_storage_type.sql  # MinIO 迁移：data_slice.storage_type
+        - classpath:db/migration/V24__data_slice_trigger_time.sql  # 触发时间：data_slice.trigger_time
+      data-locations: classpath:db/seed-tags.sql
+      continue-on-error: true  # ALTER TABLE may fail on re-run if column exists
+
+  # Exclude Kafka auto-configuration — not available in test environment.
+  # KafkaConfig bean itself is guarded by @ConditionalOnProperty so it is skipped
+  # when spring.kafka.bootstrap-servers is absent.
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+
+# DIMS custom storage directories for integration tests
+dims:
+  sims:
+    # 标签词表缓存 TTL 调小，便于测试观察到「过期后回源」；base-url 指到不可达地址，
+    # 让依赖 SIMS 的测试走降级分支（词表拉取失败 → 沿用旧缓存 / 返回占位名）而非真连外网。
+    base-url: http://sims-unreachable.invalid/sims/v1
+    catalog-ttl-ms: 1000
+    fallback-token: test-fallback-token
+  storage:
+    bag-dir: /tmp/dims-test/bags
+    export-dir: /tmp/dims-test/exports
+  python:
+    script-dir: ../dims-python
+    timeout-sec: 300

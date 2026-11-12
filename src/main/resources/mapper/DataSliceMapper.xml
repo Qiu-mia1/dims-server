@@ -1,0 +1,674 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.isim.dims.mapper.DataSliceMapper">
+
+    <!--
+        DataSliceMapper XML 映射
+
+        提供 searchSlices 多条件动态检索，支持 Section 5.2 中列出的全部查询参数。
+        分页由 MyBatis-Plus Page 插件在 Service 层注入 Page 参数后自动拼接 LIMIT/OFFSET。
+        排序字段 sort 需在 Service 层从 "created_at:desc" 格式转换为 "created_at DESC"
+        后再传入，防止 SQL 注入。
+    -->
+
+    <!-- 基础列清单，避免重复书写 -->
+    <!-- 全部使用 data_slice. 前缀，防止 LEFT JOIN cfdi_meta / slice_stats 时出现 ambiguous id 错误 -->
+    <!-- vehicle_type / stats_slice_id 为 slice_stats LEFT JOIN 冗余列（数据包列表展示用） -->
+    <sql id="baseColumns">
+        data_slice.id,
+        data_slice.name,
+        data_slice.file_path,
+        data_slice.file_size,
+        data_slice.start_ts,
+        data_slice.end_ts,
+        data_slice.duration_ms,
+        data_slice.gps_min_lat,
+        data_slice.gps_min_lon,
+        data_slice.gps_max_lat,
+        data_slice.gps_max_lon,
+        data_slice.sensor_types,
+        data_slice.event_name,
+        data_slice.msg_count_total,
+        data_slice.status,
+        data_slice.source_type,
+        data_slice.error_msg,
+        data_slice.created_at,
+        data_slice.updated_at,
+        data_slice.vin,
+        data_slice.utc_diff_us,
+        data_slice.trigger_time,
+        data_slice.import_bos_key,
+        ss.vehicle_type AS vehicle_type,
+        ss.slice_id AS stats_slice_id,
+        ss.status AS stats_status,
+        ss.noa_active,
+        ss.aeb_active,
+        ss.apa_active,
+        ss.acc_active,
+        ss.lcc_active,
+        ss.roaming_active,
+        ss.avp_active,
+        ss.fcw_active,
+        ss.aes_active,
+        ss.ess_active
+    </sql>
+
+    <!--
+        cfdi_meta LEFT JOIN 条件片段
+        同时用于 searchSlices 和 countSlices，避免重复。
+        当传入 eventName / eventNames / carType / project 任一条件时，
+        LEFT JOIN cfdi_meta 以支持 BAG（无 cfdi_meta）也能被检索。
+        ⚠️ eventNames 必须列在这里：Service 层会把 filter 展开成 eventNames 并清空 eventName，
+           漏了会导致下面的 cfdi_meta.event_name 引用到不存在的表。
+    -->
+    <sql id="cfdiJoinIf">
+        <if test="request.eventName != null and request.eventName != ''
+                  or (request.eventNames != null and request.eventNames.size() > 0)
+                  or request.carType != null and request.carType != ''
+                  or request.project != null and request.project != ''
+                  or request.dataSourceEnv != null and request.dataSourceEnv != ''
+                  or request.vin != null and request.vin != ''">
+            LEFT JOIN cfdi_meta ON data_slice.id = cfdi_meta.slice_id
+        </if>
+    </sql>
+
+    <!--
+        多条件检索数据切片
+
+        动态条件说明：
+          status        — 精确匹配状态
+          startTs/endTs — 时间范围边界（闭区间）
+          sensorTypes   — 逗号分隔字符串，逐一匹配 JSON 数组（PG: jsonb @> 包含匹配）
+          keyword       — 对 name 字段 LIKE 模糊搜索
+          tags          — 逗号分隔的 tag_id 列表，通过子查询确保全部匹配（HAVING COUNT = 参数个数）
+          minLat/maxLat — GPS 包围盒范围（Service 层已将 lat/lon/radius 转换为 bbox）
+          sort          — 预格式化的 ORDER BY 子句（如 "created_at DESC"），由 Service 层转换并校验
+    -->
+    <select id="searchSlices" resultType="com.isim.dims.entity.DataSlice">
+        SELECT <include refid="baseColumns" />
+        FROM data_slice
+        <include refid="cfdiJoinIf" />
+        <!-- slice_stats 1:1（slice_id UNIQUE），LEFT JOIN 取车型/统计记录标记，不产生行倍增 -->
+        LEFT JOIN slice_stats ss ON data_slice.id = ss.slice_id
+        <where>
+            <!-- 过滤无效短切片：duration_ms 为空或 < 5000ms 的记录不进入列表 -->
+<!--            AND data_slice.duration_ms IS NOT NULL-->
+<!--            AND data_slice.duration_ms <![CDATA[>=]]> 5000-->
+            AND (data_slice.event_name is null or data_slice.event_name not in ('obf_issue', 'bsw_log'))
+
+            <!-- 按 sliceId 集合过滤（图像语义检索结果，逗号分隔） -->
+            <if test="request.sliceIds != null and request.sliceIds != ''">
+                AND data_slice.id IN
+                <foreach collection="request.sliceIds.split(',')" item="sid" open="(" close=")" separator=",">
+                    #{sid}
+                </foreach>
+            </if>
+
+            <!-- 状态精确匹配（slice_stats 也有 status 列，必须加表前缀） -->
+            <if test="request.status != null and request.status != ''">
+                AND data_slice.status = #{request.status}
+            </if>
+
+            <!--
+                触发类型（event_name）过滤：见下方 cfdi_meta 关联过滤块，
+                统一为 data_slice.event_name OR cfdi_meta.event_name 模糊匹配，
+                此处不再做精确匹配（精确匹配会导致「输入部分事件名」检索不到）。
+            -->
+
+            <!-- 数据来源类型精确匹配 -->
+            <if test="request.sourceType != null and request.sourceType != ''">
+                AND data_slice.source_type = #{request.sourceType}
+            </if>
+
+            <!-- 起始时间 >= -->
+            <!-- PostgreSQL 不会隐式把 String 参数转 timestamp，必须显式 CAST（参数仍为占位符绑定，无注入风险） -->
+            <if test="request.startTs != null">
+                AND data_slice.start_ts <![CDATA[>=]]> CAST(#{request.startTs} AS timestamp)
+            </if>
+
+            <!-- 结束时间 <= -->
+            <if test="request.endTs != null">
+                AND data_slice.end_ts <![CDATA[<=]]> CAST(#{request.endTs} AS timestamp)
+            </if>
+
+            <!-- 创建日期范围（upload date；slice_stats 也有 created_at 列，必须加表前缀） -->
+            <if test="request.startDate != null">
+                AND data_slice.created_at <![CDATA[>=]]> CAST(#{request.startDate} AS timestamp)
+            </if>
+            <if test="request.endDate != null">
+                AND data_slice.created_at <![CDATA[<=]]> CAST(#{request.endDate} AS timestamp)
+            </if>
+
+            <!-- 触发时间范围（trigger_time，存 UTC） -->
+            <if test="request.triggerStart != null">
+                AND data_slice.trigger_time <![CDATA[>=]]> CAST(#{request.triggerStart} AS timestamp)
+            </if>
+            <if test="request.triggerEnd != null">
+                AND data_slice.trigger_time <![CDATA[<=]]> CAST(#{request.triggerEnd} AS timestamp)
+            </if>
+
+            <!-- 传感器类型 JSON 包含匹配（逗号分隔 → 逐个 AND 条件） -->
+            <if test="request.sensorTypes != null and request.sensorTypes != ''">
+                AND (
+                    <foreach collection="request.sensorTypes.split(',')" item="type" separator=" AND ">
+                        sensor_types @> to_jsonb(#{type}::text)
+                    </foreach>
+                )
+            </if>
+
+            <!-- 关键字模糊搜索（name 字段） -->
+            <if test="request.keyword != null and request.keyword != ''">
+                AND name ILIKE CONCAT('%', #{request.keyword}::text, '%')
+            </if>
+
+            <!--
+                标签全匹配子查询
+                确保切片同时具有请求中指定的所有标签
+            -->
+            <if test="request.tags != null and request.tags != ''">
+                AND data_slice.id IN (
+                    SELECT dst.slice_id
+                    FROM data_slice_tag dst
+                    WHERE dst.tag_id IN
+                    <foreach collection="request.tags.split(',')" item="tagId" open="(" close=")" separator=",">
+                        #{tagId}
+                    </foreach>
+                    GROUP BY dst.slice_id
+                    HAVING COUNT(DISTINCT dst.tag_id) = ${request.tags.split(',').length}
+                )
+            </if>
+
+            <!--
+                标签关键词模糊搜索：tag 表已随 V29 移除（标签定义在 SIMS），
+                Service 层已用 SimsTagCatalog 把关键词预解析成 tag_id 集合（request.tagIds）；
+                解析不到 id 时 Service 层短路返回空结果，不会带空集合进 SQL。
+            -->
+            <if test="request.tagIds != null and request.tagIds.size() > 0">
+                AND EXISTS (
+                    SELECT 1
+                    FROM data_slice_tag dst2
+                    WHERE dst2.slice_id = data_slice.id
+                    AND dst2.tag_id IN
+                    <foreach collection="request.tagIds" item="tid" open="(" close=")" separator=",">
+                        #{tid}
+                    </foreach>
+                )
+            </if>
+
+            <!--
+                GPS 包围盒重叠检测
+                Service 层已将中心点(lat,lon)+半径(radius)转换为包围盒(minLat,maxLat,minLon,maxLon)。
+                重叠条件：两个矩形在经纬度方向均有交集。
+            -->
+            <if test="request.minLat != null and request.maxLat != null
+                      and request.minLon != null and request.maxLon != null">
+                AND gps_min_lat <![CDATA[<=]]> #{request.maxLat}
+                AND gps_max_lat <![CDATA[>=]]> #{request.minLat}
+                AND gps_min_lon <![CDATA[<=]]> #{request.maxLon}
+                AND gps_max_lon <![CDATA[>=]]> #{request.minLon}
+            </if>
+
+            <!--
+                触发类型过滤，两档互斥（Service 层保证不会同时非空）：
+                1) eventNames —— 「触发类型」下拉选的**筛选器**展开后的事件名（一个筛选器可能
+                   对应多个事件，如 highbeam_on_filter → 高中/中远光），逐个 ILIKE 取并集；
+                2) eventName  —— 显式传入的单个事件名（兼容既有调用方）。
+                两档都同时匹配 data_slice.event_name（V22 本地导入反查列）与 cfdi_meta.event_name，
+                两路 OR 覆盖 LOCAL/BAG（无 cfdi_meta）与 CFDI 两种来源。
+                ⚠️ 用 ILIKE 模糊而非精确 IN：库里存在 apa_all_time_event_segment 这类带后缀的行，
+                   精确匹配会漏掉它们。
+            -->
+            <if test="request.eventNames != null and request.eventNames.size() > 0">
+                AND (
+                <foreach collection="request.eventNames" item="evName" separator=" OR ">
+                    (data_slice.event_name ILIKE CONCAT('%', #{evName}::text, '%')
+                        OR cfdi_meta.event_name ILIKE CONCAT('%', #{evName}::text, '%'))
+                </foreach>
+                )
+            </if>
+            <if test="(request.eventNames == null or request.eventNames.size() == 0)
+                      and request.eventName != null and request.eventName != ''">
+                AND (data_slice.event_name ILIKE CONCAT('%', #{request.eventName}::text, '%')
+                    OR cfdi_meta.event_name ILIKE CONCAT('%', #{request.eventName}::text, '%'))
+            </if>
+
+            <!--
+                车型模糊匹配，三路 OR：
+                1) cfdi_meta.car_type：CFDI 来源
+                2) slice_stats.vehicle_type：统计提取（SUCCESS）后的车型
+                3) 无统计记录时回退解析切片名第 2 段（{JMC}_{车型}_{VIN}_...）：
+                   与 DataSliceServiceImpl#toSliceItem 列表「车型」列的展示回退逻辑一致，
+                   保证列表里看得见的车型都能被检索到（如本地目录导入的切片）
+            -->
+            <if test="request.carType != null and request.carType != ''">
+                AND (cfdi_meta.car_type ILIKE CONCAT('%', #{request.carType}::text, '%')
+                    OR ss.vehicle_type ILIKE CONCAT('%', #{request.carType}::text, '%')
+                    OR (ss.vehicle_type IS NULL
+                        AND split_part(data_slice.name, '_', 2) ILIKE CONCAT('%', #{request.carType}::text, '%')))
+            </if>
+
+            <!-- cfdi_meta 关联过滤：项目名精确匹配 -->
+            <if test="request.project != null and request.project != ''">
+                AND cfdi_meta.project = #{request.project}
+            </if>
+
+            <!-- cfdi_meta 关联过滤：数据来源环境精确匹配 -->
+            <if test="request.dataSourceEnv != null and request.dataSourceEnv != ''">
+                AND cfdi_meta.data_source_env = #{request.dataSourceEnv}
+            </if>
+
+            <!--
+                VIN 模糊匹配：匹配 data_slice.vin（V17 本地导入反查列）、cfdi_meta.vin、
+                以及文件名（data_slice.name）。三路 OR 覆盖 LOCAL/BAG/CFDI 三种来源。
+            -->
+            <if test="request.vin != null and request.vin != ''">
+                AND (data_slice.vin ILIKE CONCAT('%', #{request.vin}::text, '%')
+                    OR cfdi_meta.vin ILIKE CONCAT('%', #{request.vin}::text, '%'))
+            </if>
+
+            <!-- UTC 偏移精确匹配（data_slice.utc_diff_us，单位微秒，V18 迁移新增列） -->
+            <if test="request.utcDiffUs != null">
+                AND data_slice.utc_diff_us = #{request.utcDiffUs}
+            </if>
+
+            <!-- 是否存在接管（基于 slice_stats.takeover_count > 0） -->
+            <if test="request.hasTakeover != null">
+                <choose>
+                    <when test="request.hasTakeover == true">
+                        AND ss.takeover_count IS NOT NULL AND ss.takeover_count > 0
+                    </when>
+                    <otherwise>
+                        AND (ss.takeover_count IS NULL OR ss.takeover_count = 0)
+                    </otherwise>
+                </choose>
+            </if>
+
+            <!--
+                功能激活筛选（features=NOA,AEB,...）：多选 AND 语义，
+                勾选多个功能 = 筛「同一切片内这些功能都激活过」的 case。
+                基于 slice_stats 的布尔冗余列（统计提取时「切片内任一帧激活过」即为 TRUE）。
+                统计记录缺失时 ss.*_active 为 NULL，条件不成立 → 不命中，符合预期。
+            -->
+            <if test="request.featureNames != null and request.featureNames.size() > 0">
+                <if test="request.featureNames.contains('NOA')">
+                    AND ss.noa_active = TRUE
+                </if>
+                <if test="request.featureNames.contains('AEB')">
+                    AND ss.aeb_active = TRUE
+                </if>
+                <if test="request.featureNames.contains('APA')">
+                    AND ss.apa_active = TRUE
+                </if>
+                <if test="request.featureNames.contains('LCC')">
+                    AND ss.lcc_active = TRUE
+                </if>
+                <if test="request.featureNames.contains('ACC')">
+                    AND ss.acc_active = TRUE
+                </if>
+                <if test="request.featureNames.contains('ROAMING')">
+                    AND ss.roaming_active = TRUE
+                </if>
+                <if test="request.featureNames.contains('AVP')">
+                    AND ss.avp_active = TRUE
+                </if>
+                <if test="request.featureNames.contains('FCW')">
+                    AND ss.fcw_active = TRUE
+                </if>
+                <if test="request.featureNames.contains('AES')">
+                    AND ss.aes_active = TRUE
+                </if>
+                <if test="request.featureNames.contains('ESS')">
+                    AND ss.ess_active = TRUE
+                </if>
+            </if>
+        </where>
+
+        <!--
+            排序：安全枚举所有允许的排序组合，防止 SQL 注入。
+            由 Service 层 validateSort() 将 "field:direction" 格式转换为 "field direction"
+            后传入 sort 参数。此处通过 <choose><when> 完整白名单校验，
+            不匹配时降级为默认 created_at DESC。
+
+            列限定说明：
+              event_name — cfdi_meta 同名（条件性 LEFT JOIN），必须限定 data_slice 前缀，
+                           否则带车型/触发类型/VIN 过滤时 ORDER BY 会因列名歧义报错；
+                           并用 LOWER() 忽略大小写，保证「触发类型首字母从前往后」稳定排序。
+              created_at — slice_stats 同名，必须限定前缀。
+              trigger_time — 仅 data_slice 有（V24）；NULLS LAST 让无触发时刻（非本地导入）
+                           的记录排在最后，避免 DESC 时 NULL 抢占「最近」位置。
+        -->
+        ORDER BY
+        <choose>
+            <!--
+                PRESET：按请求传入 slice_ids 的先后顺序返回（语义检索保序）。
+                由 Service 层 validateSort() 将 "preset:asc|desc" 映射为 "PRESET ASC|DESC"。
+                用 CASE ... WHEN 生成每个 ID 的下标序号再排序，从而保留传入顺序；
+                未出现在 slice_ids 中的行（不会发生，IN 已过滤）退回最大序号排最后。
+                sliceIds 为空时该分支不生效，降级走 <otherwise>。
+            -->
+            <when test="request.sort == 'PRESET ASC' and request.sliceIds != null and request.sliceIds != ''">
+                CASE data_slice.id
+                <foreach collection="request.sliceIds.split(',')" item="sid" index="idx" separator=" ">
+                    WHEN #{sid} THEN #{idx,jdbcType=INTEGER}
+                </foreach>
+                ELSE 2147483647 END ASC
+            </when>
+            <when test="request.sort == 'PRESET DESC' and request.sliceIds != null and request.sliceIds != ''">
+                CASE data_slice.id
+                <foreach collection="request.sliceIds.split(',')" item="sid" index="idx" separator=" ">
+                    WHEN #{sid} THEN #{idx,jdbcType=INTEGER}
+                </foreach>
+                ELSE -1 END DESC
+            </when>
+            <when test="request.sort == 'name ASC'">name ASC</when>
+            <when test="request.sort == 'name DESC'">name DESC</when>
+            <when test="request.sort == 'created_at ASC'">data_slice.created_at ASC</when>
+            <when test="request.sort == 'created_at DESC'">data_slice.created_at DESC</when>
+            <when test="request.sort == 'start_ts ASC'">start_ts ASC</when>
+            <when test="request.sort == 'start_ts DESC'">start_ts DESC</when>
+            <when test="request.sort == 'end_ts ASC'">end_ts ASC</when>
+            <when test="request.sort == 'end_ts DESC'">end_ts DESC</when>
+            <when test="request.sort == 'trigger_time ASC'">data_slice.trigger_time ASC NULLS LAST</when>
+            <when test="request.sort == 'trigger_time DESC'">data_slice.trigger_time DESC NULLS LAST</when>
+            <when test="request.sort == 'file_size ASC'">file_size ASC</when>
+            <when test="request.sort == 'file_size DESC'">file_size DESC</when>
+            <when test="request.sort == 'event_name ASC'">LOWER(data_slice.event_name) ASC</when>
+            <when test="request.sort == 'event_name DESC'">LOWER(data_slice.event_name) DESC</when>
+            <otherwise>data_slice.created_at DESC</otherwise>
+        </choose>
+        LIMIT #{request.pageSize} OFFSET #{request.startRow}
+    </select>
+
+    <!--
+        多条件计数查询（分页总数）
+
+        镜像 searchSlices 的所有过滤条件，仅返回 COUNT(*)，
+        确保分页总数与检索结果完全一致。
+    -->
+    <select id="countSlices" resultType="long">
+        SELECT COUNT(*)
+        FROM data_slice
+        <include refid="cfdiJoinIf" />
+        LEFT JOIN slice_stats ss ON data_slice.id = ss.slice_id
+        <where>
+            <!-- 过滤无效短切片（与 searchSlices 保持镜像：duration_ms 为空或 < 5000ms 不计数） -->
+<!--            AND data_slice.duration_ms IS NOT NULL-->
+<!--            AND data_slice.duration_ms <![CDATA[>=]]> 5000-->
+            AND (data_slice.event_name is null or data_slice.event_name not in ('obf_issue', 'bsw_log'))
+
+            <!-- 按 sliceId 集合过滤（图像语义检索结果，逗号分隔） -->
+            <if test="request.sliceIds != null and request.sliceIds != ''">
+                AND data_slice.id IN
+                <foreach collection="request.sliceIds.split(',')" item="sid" open="(" close=")" separator=",">
+                    #{sid}
+                </foreach>
+            </if>
+
+            <if test="request.status != null and request.status != ''">
+                AND data_slice.status = #{request.status}
+            </if>
+
+            <!--
+                触发类型（event_name）过滤：见下方 cfdi_meta 关联过滤块（模糊匹配），
+                与 searchSlices 保持镜像，不再做精确匹配。
+            -->
+
+            <if test="request.sourceType != null and request.sourceType != ''">
+                AND source_type = #{request.sourceType}
+            </if>
+
+            <if test="request.startTs != null">
+                AND data_slice.start_ts <![CDATA[>=]]> CAST(#{request.startTs} AS timestamp)
+            </if>
+
+            <if test="request.endTs != null">
+                AND data_slice.end_ts <![CDATA[<=]]> CAST(#{request.endTs} AS timestamp)
+            </if>
+
+            <!-- 创建日期范围（与 searchSlices 保持镜像） -->
+            <if test="request.startDate != null">
+                AND data_slice.created_at <![CDATA[>=]]> CAST(#{request.startDate} AS timestamp)
+            </if>
+            <if test="request.endDate != null">
+                AND data_slice.created_at <![CDATA[<=]]> CAST(#{request.endDate} AS timestamp)
+            </if>
+
+            <!-- 触发时间范围（与 searchSlices 保持镜像） -->
+            <if test="request.triggerStart != null">
+                AND data_slice.trigger_time <![CDATA[>=]]> CAST(#{request.triggerStart} AS timestamp)
+            </if>
+            <if test="request.triggerEnd != null">
+                AND data_slice.trigger_time <![CDATA[<=]]> CAST(#{request.triggerEnd} AS timestamp)
+            </if>
+
+            <if test="request.sensorTypes != null and request.sensorTypes != ''">
+                AND (
+                    <foreach collection="request.sensorTypes.split(',')" item="type" separator=" AND ">
+                        sensor_types @> to_jsonb(#{type}::text)
+                    </foreach>
+                )
+            </if>
+
+            <if test="request.keyword != null and request.keyword != ''">
+                AND name ILIKE CONCAT('%', #{request.keyword}::text, '%')
+            </if>
+
+            <if test="request.tags != null and request.tags != ''">
+                AND data_slice.id IN (
+                    SELECT dst.slice_id
+                    FROM data_slice_tag dst
+                    WHERE dst.tag_id IN
+                    <foreach collection="request.tags.split(',')" item="tagId" open="(" close=")" separator=",">
+                        #{tagId}
+                    </foreach>
+                    GROUP BY dst.slice_id
+                    HAVING COUNT(DISTINCT dst.tag_id) = ${request.tags.split(',').length}
+                )
+            </if>
+
+            <!-- 标签关键词：同 searchSlices，Service 层已把关键词预解析成 request.tagIds -->
+            <if test="request.tagIds != null and request.tagIds.size() > 0">
+                AND EXISTS (
+                    SELECT 1
+                    FROM data_slice_tag dst2
+                    WHERE dst2.slice_id = data_slice.id
+                    AND dst2.tag_id IN
+                    <foreach collection="request.tagIds" item="tid" open="(" close=")" separator=",">
+                        #{tid}
+                    </foreach>
+                )
+            </if>
+
+            <if test="request.minLat != null and request.maxLat != null
+                      and request.minLon != null and request.maxLon != null">
+                AND gps_min_lat <![CDATA[<=]]> #{request.maxLat}
+                AND gps_max_lat <![CDATA[>=]]> #{request.minLat}
+                AND gps_min_lon <![CDATA[<=]]> #{request.maxLon}
+                AND gps_max_lon <![CDATA[>=]]> #{request.minLon}
+            </if>
+
+            <!--
+                触发类型模糊匹配（与 searchSlices 保持镜像：data_slice.event_name + cfdi_meta.event_name）。
+                count 必须与 search 用同一套条件，否则总数与列表对不上 —— 两档分支都要镜像。
+            -->
+            <if test="request.eventNames != null and request.eventNames.size() > 0">
+                AND (
+                <foreach collection="request.eventNames" item="evName" separator=" OR ">
+                    (data_slice.event_name ILIKE CONCAT('%', #{evName}::text, '%')
+                        OR cfdi_meta.event_name ILIKE CONCAT('%', #{evName}::text, '%'))
+                </foreach>
+                )
+            </if>
+            <if test="(request.eventNames == null or request.eventNames.size() == 0)
+                      and request.eventName != null and request.eventName != ''">
+                AND (data_slice.event_name ILIKE CONCAT('%', #{request.eventName}::text, '%')
+                    OR cfdi_meta.event_name ILIKE CONCAT('%', #{request.eventName}::text, '%'))
+            </if>
+
+            <!-- 车型模糊匹配（与 searchSlices 保持镜像：cfdi_meta.car_type + ss.vehicle_type + 名称第 2 段回退） -->
+            <if test="request.carType != null and request.carType != ''">
+                AND (cfdi_meta.car_type ILIKE CONCAT('%', #{request.carType}::text, '%')
+                    OR ss.vehicle_type ILIKE CONCAT('%', #{request.carType}::text, '%')
+                    OR (ss.vehicle_type IS NULL
+                        AND split_part(data_slice.name, '_', 2) ILIKE CONCAT('%', #{request.carType}::text, '%')))
+            </if>
+
+            <if test="request.project != null and request.project != ''">
+                AND cfdi_meta.project = #{request.project}
+            </if>
+
+            <if test="request.dataSourceEnv != null and request.dataSourceEnv != ''">
+                AND cfdi_meta.data_source_env = #{request.dataSourceEnv}
+            </if>
+
+            <!-- VIN 模糊匹配（与 searchSlices 保持一致的镜像条件：data_slice.vin + cfdi_meta.vin + data_slice.name） -->
+            <if test="request.vin != null and request.vin != ''">
+                AND (data_slice.vin ILIKE CONCAT('%', #{request.vin}::text, '%')
+                    OR cfdi_meta.vin ILIKE CONCAT('%', #{request.vin}::text, '%'))
+            </if>
+
+            <!-- UTC 偏移精确匹配（data_slice.utc_diff_us） -->
+            <if test="request.utcDiffUs != null">
+                AND data_slice.utc_diff_us = #{request.utcDiffUs}
+            </if>
+
+            <!-- 是否存在接管（基于 slice_stats.takeover_count > 0） -->
+            <if test="request.hasTakeover != null">
+                <choose>
+                    <when test="request.hasTakeover == true">
+                        AND ss.takeover_count IS NOT NULL AND ss.takeover_count > 0
+                    </when>
+                    <otherwise>
+                        AND (ss.takeover_count IS NULL OR ss.takeover_count = 0)
+                    </otherwise>
+                </choose>
+            </if>
+
+            <!--
+                功能激活筛选（features=NOA,AEB,...）：多选 AND 语义，
+                勾选多个功能 = 筛「同一切片内这些功能都激活过」的 case。
+                基于 slice_stats 的布尔冗余列（统计提取时「切片内任一帧激活过」即为 TRUE）。
+                统计记录缺失时 ss.*_active 为 NULL，条件不成立 → 不命中，符合预期。
+            -->
+            <if test="request.featureNames != null and request.featureNames.size() > 0">
+                <if test="request.featureNames.contains('NOA')">
+                    AND ss.noa_active = TRUE
+                </if>
+                <if test="request.featureNames.contains('AEB')">
+                    AND ss.aeb_active = TRUE
+                </if>
+                <if test="request.featureNames.contains('APA')">
+                    AND ss.apa_active = TRUE
+                </if>
+                <if test="request.featureNames.contains('LCC')">
+                    AND ss.lcc_active = TRUE
+                </if>
+                <if test="request.featureNames.contains('ACC')">
+                    AND ss.acc_active = TRUE
+                </if>
+                <if test="request.featureNames.contains('ROAMING')">
+                    AND ss.roaming_active = TRUE
+                </if>
+                <if test="request.featureNames.contains('AVP')">
+                    AND ss.avp_active = TRUE
+                </if>
+                <if test="request.featureNames.contains('FCW')">
+                    AND ss.fcw_active = TRUE
+                </if>
+                <if test="request.featureNames.contains('AES')">
+                    AND ss.aes_active = TRUE
+                </if>
+                <if test="request.featureNames.contains('ESS')">
+                    AND ss.ess_active = TRUE
+                </if>
+            </if>
+        </where>
+    </select>
+
+    <!--
+      ==========================================================================
+      运营日报看板（v6）：日报摘要 + 19 类事件分布 + 24H 重点事件统计
+      ==========================================================================
+      三条口径约束（改之前先读 MxfDailyReportEvents 的类注释）：
+      ① 时间字段统一 COALESCE(trigger_time, start_ts, created_at)，与看板面板的
+         Java 三级兜底一致；只有 COALESCE(trigger_time, start_ts) 会漏掉两者都为空的行。
+      ② 区间左闭右开 [from, to)，与 /window 的北京自然日口径一致。
+      ③ 全部在 SQL 侧聚合，不走 selectDashboardRows（那是 LIMIT 5000 的内存截断）。
+    -->
+
+    <!--
+      日报摘要总量：一条 SQL 出四项数字。
+      - total_files   = 切片数（无文件明细表，一行 data_slice = 一个数据包）
+      - total_vehicles= 去重 VIN
+      - total_bytes   = SUM(file_size)
+      - total_triggers= 有效触发包数（event_name 非空且非 obf_*，一个包最多 1 次）
+    -->
+    <select id="selectDailyReportTotals" resultType="map">
+        SELECT COUNT(*)                       AS total_files,
+               COUNT(DISTINCT ds.vin)         AS total_vehicles,
+               COALESCE(SUM(ds.file_size), 0) AS total_bytes,
+               COUNT(*) FILTER (
+                   WHERE NULLIF(btrim(ds.event_name), '') IS NOT NULL
+                     AND ds.event_name NOT IN ('obf_issue', 'obf_metric')
+               )                              AS total_triggers
+        FROM data_slice ds
+        WHERE ds.status <![CDATA[<>]]> 'ERROR'
+          AND COALESCE(ds.trigger_time, ds.start_ts, ds.created_at) <![CDATA[>=]]> #{from}
+          AND COALESCE(ds.trigger_time, ds.start_ts, ds.created_at) <![CDATA[<]]> #{to}
+        <if test="sourceType != null and sourceType != ''">
+            AND ds.source_type = #{sourceType}
+        </if>
+    </select>
+
+    <!--
+      日报事件分布：按原始 event_name 分组（行数 ≤ 事件种类数），Java 侧归 19 个桶。
+      不在 SQL 里写 19 路 CASE：归类表会变成 Java/XML 两份，且 APA 的前缀规则在 CASE 里写不清。
+    -->
+    <select id="selectDailyReportEventCounts" resultType="map">
+        SELECT ds.event_name AS event_name, COUNT(*) AS cnt
+        FROM data_slice ds
+        WHERE ds.status <![CDATA[<>]]> 'ERROR'
+          AND COALESCE(ds.trigger_time, ds.start_ts, ds.created_at) <![CDATA[>=]]> #{from}
+          AND COALESCE(ds.trigger_time, ds.start_ts, ds.created_at) <![CDATA[<]]> #{to}
+        <if test="sourceType != null and sourceType != ''">
+            AND ds.source_type = #{sourceType}
+        </if>
+        GROUP BY ds.event_name
+    </select>
+
+    <!-- 24H 重点事件计数：固定 8 个事件，未命中的由 Service 补 0 -->
+    <select id="selectKeyEventCounts" resultType="map">
+        SELECT ds.event_name AS event_name, COUNT(*) AS cnt
+        FROM data_slice ds
+        WHERE ds.status <![CDATA[<>]]> 'ERROR'
+          AND COALESCE(ds.trigger_time, ds.start_ts, ds.created_at) <![CDATA[>=]]> #{from}
+          AND COALESCE(ds.trigger_time, ds.start_ts, ds.created_at) <![CDATA[<]]> #{to}
+          AND ds.event_name IN
+          <foreach collection="events" item="e" open="(" separator="," close=")">#{e}</foreach>
+        <if test="sourceType != null and sourceType != ''">
+            AND ds.source_type = #{sourceType}
+        </if>
+        GROUP BY ds.event_name
+    </select>
+
+    <!--
+      24H 重点事件明细：带 system_name（软件版本列）。
+      events 必须非空（Service 用配置中的 8 项兜底），否则 IN () 语法错误。
+    -->
+    <select id="selectKeyEventSlices" resultType="com.isim.dims.entity.DataSlice">
+        SELECT ds.id, ds.name, ds.vin, ds.event_name, ds.trigger_time, ds.start_ts,
+               ds.created_at, ds.storage_type, ds.source_type, ds.system_name
+        FROM data_slice ds
+        WHERE ds.status <![CDATA[<>]]> 'ERROR'
+          AND COALESCE(ds.trigger_time, ds.start_ts, ds.created_at) <![CDATA[>=]]> #{from}
+          AND COALESCE(ds.trigger_time, ds.start_ts, ds.created_at) <![CDATA[<]]> #{to}
+          AND ds.event_name IN
+          <foreach collection="events" item="e" open="(" separator="," close=")">#{e}</foreach>
+        <if test="sourceType != null and sourceType != ''">
+            AND ds.source_type = #{sourceType}
+        </if>
+        ORDER BY COALESCE(ds.trigger_time, ds.start_ts, ds.created_at) DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

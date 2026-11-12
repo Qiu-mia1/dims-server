@@ -1,0 +1,2 @@
+-- SIMS 标签目录由 V20__replace_tag_library_with_sims.sql 一次性导入。
+-- 此文件保持为空，避免 spring.sql.init 每次启动重新写入旧标签。

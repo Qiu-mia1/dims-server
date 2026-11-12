@@ -1,0 +1,368 @@
+# ============================================================
+# DIMS 主配置
+# ============================================================
+server:
+  port: 8099
+
+  # ---- Tomcat 服务器调优（支持多路视频并发） ----
+  tomcat:
+    threads:
+      max: 200                                      # 最大工作线程（默认 200，保持）
+      min-spare: 20                                  # 最小空闲线程（从 10 提升至 20，应对视频并发突增）
+    max-connections: 8192                            # 最大连接数（默认 8192，保持）
+    accept-count: 200                                # 等待队列长度（从 100 提升至 200，削峰填谷）
+    connection-timeout: 120000                       # 连接超时（从默认 20s 提升至 120s，支持长视频传输）
+    max-keep-alive-requests: -1                      # 长连接不限制请求数（视频 Range 请求复用连接）
+    buffer-size: 8192                                # 响应输出缓冲区（默认 8KB，显式设定与 app buffer 一致）
+    max-swallow-size: -1                            # 最大可吞咽请求体（防 OOM，不影响视频响应）
+
+  compression:
+    enabled: false                                   # 视频文件已压缩，不启用 HTTP 压缩（节省 CPU）
+
+spring:
+  application:
+    name: dims
+
+  # ---- Nacos 配置中心：启动时拉取 dims.yaml（isim3.0 命名空间 / DIMS_GROUP），Nacos 值覆盖本地同 key 值 ----
+  # optional: 前缀保证 Nacos 不可达时仍可用本地配置启动
+  config:
+    import:
+      - optional:nacos:dims.yaml?group=DIMS_GROUP&refreshEnabled=true
+
+  # ---- IAMS 统一鉴权（Resource Server，docs/子系统对接指南.md §2） ----
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # IAMS JWKS 公钥端点（RS256 本地验签，仅启动时拉取 + 定期刷新，不逐请求回查 IAMS）
+          # 对接指南 §2.1 原始端点（iamsbackend 服务直连）；部署环境统一走网关且
+          # gateway.isim.internal 可解析时，可改回 https://gateway.isim.internal/iams/oauth2/jwks
+          jwk-set-uri: http://iamsbackend.jmc.svc:8080/iams/oauth2/jwks
+
+  # ---- Nacos（配置中心 + 服务发现）----
+  # 配置中心：见上方 spring.config.import；连接信息必须本地可解析，不能从 Nacos 自身读取
+  # 服务发现：本地开发默认关闭；接入 IAMS 服务发现时置 true（见 docs/dims-iams-permissions.md）
+  cloud:
+    nacos:
+      discovery:
+        enabled: true
+        server-addr: nacos.jmc.svc:8848
+        username: nacos
+        password: nacos
+        namespace: 30f93757-69e6-4b29-98b9-158ba34782d1
+        group: DIMS_GROUP
+      config:
+        enabled: true
+        server-addr: nacos.jmc.svc:8848
+        username: nacos
+        password: nacos
+        namespace: 30f93757-69e6-4b29-98b9-158ba34782d1
+        group: DIMS_GROUP
+    service-registry:
+      auto-registration:
+        enabled: true
+
+  # ---- Spring MVC 异步请求配置 ----
+  mvc:
+    async:
+      request-timeout: 600000                        # 异步请求超时（10 分钟），WebMvcConfig 中覆盖为 30 分钟以支持长视频
+
+  # ---- 文件上传配置 ----
+  servlet:
+    multipart:
+      max-file-size: 2GB
+      max-request-size: 2100MB
+
+  # ---- Jackson 序列化配置 ----
+  # 全局 snake_case 对齐 OpenAPI 契约
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+
+  # ---- PostgreSQL 多数据源（dynamic-datasource） ----
+  # master  = DIMS 主库（业务表 data_slice 等）
+  # pgvector = 独立向量库（以图搜图 / 文搜图 / 特征搜图的 embedding 检索，见顶层 pgvector 配置）
+  datasource:
+    dynamic:
+      primary: master                       # 默认主库，未标注 @DS 的 Mapper 均走 master
+      strict: false                         # 找不到 @DS 指定数据源时回退主库，避免启动/运行炸掉
+      datasource:
+        master:
+          url: jdbc:postgresql://localhost:5432/dims?stringtype=unspecified
+          driver-class-name: org.postgresql.Driver
+          username: postgres
+          password: root123
+        pgvector:
+          url: jdbc:postgresql://10.130.212.2:15432/dims_pgvector
+          driver-class-name: org.postgresql.Driver
+          username: isim
+          password: zdjs_2023
+
+  # ---- Kafka 配置 ----
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      group-id: dims-consumer-group
+      auto-offset-reset: latest
+
+  data:
+    redis:
+      host: redis.jmc.svc
+      port: 6379
+      password: Fas!2Df10s
+      database: 0
+
+  redisson:
+    single-server-config:
+      address: redis://redis.jmc.svc:6379
+      password: Fas!2Df10s
+      database: 8
+
+# ---- MyBatis-Plus 配置 ----
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# ---- DIMS 自定义配置 ----
+dims:
+  download:
+    # 浏览器原生下载票据签名密钥；生产多副本部署时所有实例必须使用同一个值
+    ticket-secret: ${DIMS_DOWNLOAD_TICKET_SECRET:}
+    # ---- 定时从 BOS 拉取数据的相关配置（DownloadDataSchedule）----
+    # BOS 对象前缀（仅下载该前缀下的对象，如数据接入目录；留空则扫描整桶）
+    bos-prefix: ${DIMS_DOWNLOAD_BOS_PREFIX:mmt_test}
+    # 下载落地目录
+    local-dir: ${DIMS_DOWNLOAD_LOCAL_DIR:/data/downloads}
+    # 下载记录 JSON 文件路径（默认 {local-dir}/download-record.json）
+    record-file: ${DIMS_DOWNLOAD_RECORD_FILE:}
+    # 下载「n 分钟前上传完成」的对象（分钟）
+    window-minutes: ${DIMS_DOWNLOAD_WINDOW_MINUTES:3}
+    # 定时任务执行间隔（毫秒），默认 3 分钟
+    interval-ms: ${DIMS_DOWNLOAD_INTERVAL_MS:180000}
+    # ---- 定时从 BOS 桶 jmc-data-835-source 拉取 Hirain（恒润）源数据 → 转换 → 入库（DownloadHirain835Schedule）----
+    hirain:
+      bucket: ${DIMS_DOWNLOAD_HIRAIN_BUCKET:jmc-data-835-source}
+      # 桶内数据根前缀，其下按 {yyyyMMdd}/{VIN}/{session}_public/public 组织
+      prefix: ${DIMS_DOWNLOAD_HIRAIN_PREFIX:standard/production_car/source/jiangling-poc_test}
+      local-dir: ${DIMS_DOWNLOAD_HIRAIN_LOCAL_DIR:/data/downloads-hirain}
+      # 转换产物目录，留空则 {local-dir}/converted
+      converted-dir: ${DIMS_DOWNLOAD_HIRAIN_CONVERTED_DIR:}
+      # 已处理子集目录记录，留空则 {local-dir}/download-hirain-subdirs.json
+      record-file: ${DIMS_DOWNLOAD_HIRAIN_RECORD_FILE:}
+      # 处理窗口（小时），48 = 今天 + 昨天 + 前天
+      recent-hours: ${DIMS_DOWNLOAD_HIRAIN_RECENT_HOURS:48}
+      # 只处理上传完成时间距今超过该分钟数的对象
+      upload-lag-minutes: ${DIMS_DOWNLOAD_HIRAIN_UPLOAD_LAG_MINUTES:30}
+      # 落库 data_slice.source_type 固定值
+      source-type: ${DIMS_DOWNLOAD_HIRAIN_SOURCE_TYPE:Hirain}
+      # 转换程序可执行文件路径
+      mcap-converter-path: ${DIMS_DOWNLOAD_HIRAIN_MCAP_CONVERTER_PATH:/opt/dims-python/mcap_converter}
+      # 转换程序附加参数（追加在所有 --video 之后、-o 之前，默认带上 "--need_distort"）；留空则不追加
+      mcap-converter-args: ${DIMS_DOWNLOAD_HIRAIN_MCAP_CONVERTER_ARGS:--need_distort}
+      mcap-converter-timeout-minutes: ${DIMS_DOWNLOAD_HIRAIN_MCAP_CONVERTER_TIMEOUT_MINUTES:120}
+      # 转换程序输入模式：auto=优先 --cyber/--video，找不到则 --data_folder；data_folder=始终用目录
+      converter-input-mode: ${DIMS_DOWNLOAD_HIRAIN_CONVERTER_INPUT_MODE:auto}
+      # --cyber 文件后缀 / --video 文件后缀
+      converter-cyber-suffix: ${DIMS_DOWNLOAD_HIRAIN_CONVERTER_CYBER_SUFFIX:.record}
+      converter-video-suffix: ${DIMS_DOWNLOAD_HIRAIN_CONVERTER_VIDEO_SUFFIX:.h265}
+      # 转换程序输入子目录（如 public）；留空则整个子集目录作为输入
+      converter-input-subdir: ${DIMS_DOWNLOAD_HIRAIN_CONVERTER_INPUT_SUBDIR:}
+      # 打包进 zip 的转换产物后缀；留空（默认）则打包输出目录下全部文件
+      bundle-suffix: ${DIMS_DOWNLOAD_HIRAIN_BUNDLE_SUFFIX:}
+      output-extension: ${DIMS_DOWNLOAD_HIRAIN_OUTPUT_EXTENSION:.mcap}
+      # 入库成功后是否删除本地下载的原始数据
+      cleanup-downloaded: ${DIMS_DOWNLOAD_HIRAIN_CLEANUP_DOWNLOADED:false}
+      cron: ${DIMS_DOWNLOAD_HIRAIN_CRON:0 0/2 * * * ? }   # 调度周期，默认 5 分钟
+  # ---- 数据切片「按需加载」（SliceLoadServiceImpl）----
+  # meta-only 切片（META_READY，只含 meta + 前视鱼眼）点「加载」后的全量拉取与转换
+  # ---- 单车 MXF 埋点看板 / 运营日报看板（MxfVehicleDashboardConfig）----
+  # 阈值按需求方要求只做后端配置（前端只读展示当前值），改配置后需重启服务生效。
+  # event-options / default-events（8 个固定重点事件，2026-10 原型定案）不在此覆盖，保持配置类默认值，
+  # 避免同一份清单在 yml 与 Java 里各存一份、改一处忘一处。
+  # 日报的 19 类事件分布是代码级契约（MxfDailyReportEvents），同样不在 yml 配置。
+  mxf:
+    vehicle:
+      backlog-delay-days: 2         # 积压判定：最新切片 created_at − 触发时刻 超过该天数即告警（天）
+      backlog-vehicles: 20          # 积压告警阈值（辆），异常车辆数超过它即提示
+      default-date-offset-days: 1   # （v5 遗留）右列统计日期默认 = 今天 − N 天（1 = 昨天全天，北京时间）
+      trend-days: 3                 # （v5 遗留）左右两列趋势曲线默认天数（口径：最近 N 天）
+      max-packets: 5000             # （v5 遗留）内存聚合的切片数上限；v6 日报端点已全部下推 SQL，不受此限
+      max-records: 200              # 各明细表默认最大返回行数
+
+  load:
+    # 预计耗时用的下载吞吐（字节/秒），默认 20MB/s
+    download-bytes-per-second: ${DIMS_LOAD_DOWNLOAD_BYTES_PER_SECOND:20971520}
+    # 转换 + 解析 + 打标流水线的经验耗时（秒），计入预计总耗时
+    pipeline-seconds: ${DIMS_LOAD_PIPELINE_SECONDS:600}
+    # 预计耗时下限（秒），避免小数据给出「0 秒」
+    min-estimated-seconds: ${DIMS_LOAD_MIN_ESTIMATED_SECONDS:60}
+    # 并发加载数（每个加载会拉大文件 + 跑转换，限制避免打满磁盘/CPU）
+    concurrency: ${DIMS_LOAD_CONCURRENCY:2}
+  # ---- 前视预览（FisheyePreviewServiceImpl，meta-only 切片可播放的一路视频）----
+  preview:
+    # ffmpeg 可执行文件路径（部署环境需安装）
+    ffmpeg-path: ${DIMS_PREVIEW_FFMPEG_PATH:ffmpeg}
+    # 单个预览转码超时（分钟）
+    ffmpeg-timeout-minutes: ${DIMS_PREVIEW_FFMPEG_TIMEOUT_MINUTES:30}
+    # 预览转码并发数（避免一次 meta-only 导入多个会话时挤爆 CPU）
+    concurrency: ${DIMS_PREVIEW_CONCURRENCY:2}
+    # bag 中预览首选 topic：前视广角（camera_event_config.json: F100_front_wide）
+    wide-topic: ${DIMS_PREVIEW_WIDE_TOPIC:/sensor/camera_front_wide/video}
+    # 降级 topic：数据包中无广角视频流时播放前视鱼眼（F195_front_fisheye）
+    fisheye-topic: ${DIMS_PREVIEW_FISHEYE_TOPIC:/sensor/camera_front_fisheye/video}
+    # bag 抽帧 + mux 超时（秒）
+    bag-extract-timeout-sec: ${DIMS_PREVIEW_BAG_EXTRACT_TIMEOUT_SEC:900}
+  storage:
+    type: ${DIMS_STORAGE_TYPE:minio}      # 存储模式：minio（MinIO 对象存储，默认）/ local（本地文件系统）
+    temp-dir: ${DIMS_STORAGE_TEMP_DIR:/data/tmp}  # minio 模式本地临时目录（Python 产物 staging + bag 物化缓存）
+    bag-dir: ${DIMS_BAG_DIR:/data}         # ROS bag 原始文件存储目录
+    export-dir: ${DIMS_EXPORT_DIR:/data/exports}         # 导出产物存储目录
+    video-dir: ${DIMS_VIDEO_DIR:/data/videos}           # 视频段缓存目录（Phase 2）
+    trajectory-dir: ${DIMS_TRAJECTORY_DIR:/data/trajectories} # GPS 轨迹缓存目录（Phase 2）
+    signal-dir: ${DIMS_SIGNAL_DIR:/data/signals}         # 信号数据缓存目录（Phase 2）
+    cfdi-dir: ${DIMS_CFDI_DIR:/data/tmp/cfdi}             # CFDI 数据包工作目录（与 cfdi-converter-service 共享 /data）
+    replay-cache-dir: ${DIMS_REPLAY_CACHE_DIR:/data/cache}    # 2D 回放产物缓存目录（障碍分段/消息 JSONL）
+  python:
+    script-dir: ${DIMS_PYTHON_DIR:/opt/dims-python}        # Python 算法脚本目录（容器内注入 /opt/dims-python）
+    timeout-sec: 300                  # Python 脚本执行超时（秒）
+  scene-extraction:
+    script-dir: ${DIMS_SCENE_EXTRACTION_DIR:../dims-python/scene_extraction}   # 场景提取脚本目录（bag_to_unified_json / scene_detector / rules）
+    root-dir: ${DIMS_SCENE_EXTRACT_ROOT:data/scene_extract}            # 场景提取产物根目录
+  # ---- SIMS 片段域标签词表（DIMS 只代理，本地无 tag 表；见 V29 迁移）----
+  # ┌── ⚠️ 诊断要点：4xx 原样透传（含 403 缺 sims:tag:delete），5xx/连接失败归一为 502，
+  # │    上游 401 也归一为 502 —— 原样透传 401 会让前端 clearToken() 把用户无故踢下线。
+  # └── ⚠️ 删除类调用透传【用户 token】而非服务 token：SIMS 删除端点只认 sims:tag:delete，
+  #        client_credentials 服务 token 不带 authorities，用服务 token 必然 403。
+  # ┌── ⚠️ base-url 必须能在 dims-server 的【运行环境内】解析，不能用只在宿主机/办公网
+  # │    生效的网关别名。已踩坑（2026-09-23 测试环境）：默认值 www.jmc.svc 在开发机可解析，
+  # │    但 dims-server 所在环境解析不了 → 标签接口整片 502「SIMS 地址解析失败（DNS）」。
+  # │    容器/集群内互访应改用服务短名，对齐本文件 cfdi.converter-url 的
+  # │    `cfdiconverter:8098`，以及 SIMS 侧回指 DIMS 用的 `dimsserver:8099`；
+  # │    具体 Service 名以现场实际部署为准。
+  # └── 覆盖途径：环境变量 DIMS_SIMS_BASE_URL，或 Nacos dims.yaml 的 dims.sims.base-url
+  #     （Nacos 值优先级高于此默认值，见文件顶部 spring.config.import）。
+  sims:
+    base-url: http://simsbackend:8088/sims-server/v1
+    # 片段域词表进程内缓存 TTL（毫秒）。SIMS 不支持按 id 批量查标签，
+    # 切片列表取名全靠这份缓存，否则一页 20 条切片就是 N+1 次外部调用。
+    catalog-ttl-ms: ${DIMS_SIMS_CATALOG_TTL_MS:300000}       # 5 分钟
+    token-refresh-ms: ${DIMS_SIMS_TOKEN_REFRESH_MS:10800000} # 3 小时（周期刷新）
+    # 首次刷新延迟：默认 0 = 启动后立即刷新。
+    # ⚠️ 绝不能复用 token-refresh-ms（3h）—— 那样启动后 3 小时内会一直用启动那一刻的
+    #    fallback token；它一旦已过期，标签接口整片 401「未登录或登录已过期」（已踩坑）。
+    token-initial-delay-ms: ${DIMS_SIMS_TOKEN_INITIAL_DELAY_MS:0}
+    # IAMS 不可达时的兜底 token。⚠️ 默认**留空**：不要提交带 exp 的长期 token ——
+    # 它过期后会变成负资产（静默把请求变成 401，还掩盖真实原因，见 2026-09-23 故障）。
+    # 确需兜底请由部署环境用 DIMS_SIMS_FALLBACK_TOKEN 注入，并保证轮换。
+    fallback-token: ${DIMS_SIMS_FALLBACK_TOKEN:}
+  cfdi:
+    converter-url: ${DIMS_CFDI_CONVERTER_URL:http://cfdiconverter:8098/convert}
+  task:
+    disk-retention-hours: 48          # 磁盘任务元数据文件保留时间（小时），超时后由清理任务删除
+  # ---- 切片文件保留清理 + 历史切片 meta 字段回填（DataSliceFileRetentionSchedule）----
+  # 清理：只删文件、不删 data_slice 记录、不改字段；清理对象 = start_ts 早于 now-days 天的切片
+  #   的 import_source_dir 本地目录 + file_path 对象存储文件。
+  # 回填：按 meta-fixup.cron 查询 event_name / trigger_time 为空的切片，读 import_source_dir
+  #   下的 meta 文件补齐空值（不覆盖已有值、不改其它字段）。
+  retention:
+    slice:
+      enabled: ${DIMS_SLICE_RETENTION_ENABLED:true}        # 总开关，false 时整个清理任务不装配
+      days: ${DIMS_SLICE_RETENTION_DAYS:30}                # 保留天数（start_ts 早于 now-days 的切片可被清理）
+      cron: ${DIMS_SLICE_RETENTION_CRON:0 30 3 * * ?}      # Spring 6 位 cron（秒 分 时 日 月 周），默认每天 03:30
+      batch-size: ${DIMS_SLICE_RETENTION_BATCH_SIZE:200}   # 单批扫描条数（清理 / meta 回填共用）
+      dry-run: ${DIMS_SLICE_RETENTION_DRY_RUN:false}       # true = 只统计日志、不删除也不写库（上线前先跑一次）
+      # 允许递归删除/读取的本地源目录白名单（逗号分隔）；import_source_dir 必须位于其下且不等于其本身
+      # 默认与下载落地目录 dims.download.local-dir 保持一致（本地导入源目录即来自该目录）
+      import-source-roots: ${DIMS_SLICE_RETENTION_SOURCE_ROOTS:${DIMS_DOWNLOAD_LOCAL_DIR:/data/downloads}}
+  siglip:
+    # 以图搜图 / 以文搜图 / 特征搜图 语义检索配置（SigLIP2 embedding 服务，见 dims-python/siglip_service.py）
+    enabled: true    # 未部署 embedding 服务时默认关闭，检索接口返回 FEATURES_DISABLED
+    url: http://192.168.114.2:30800   # SigLIP2 FastAPI 服务地址
+    embed-dims: 768       # 特征向量维度
+    timeout-sec: 30      # 单次 embedding 请求超时（秒）
+    # ---- 视频片段级语义检索（POST /v1/data-slices/search/by-text | /search/by-image）----
+    # 调参基准（实测拓扑）：单个 MP4 约 30s，抽帧间隔 frame_interval_sec=2
+    #   → 每路摄像头约 15 帧；每个事件 2~3 路摄像头 → 每个切片约 30~45 帧。
+    search-candidate-limit: 300   # 候选池（帧数）。每切片约 30~45 帧，300 ≈ 7~10 个切片的全覆盖量；
+                                  # 设 100 时单个强匹配切片就能占掉近一半名额，会漏掉其它相关切片
+    search-result-limit: 60       # Top N 区间数。每切片按摄像头路数产 2~3 个区间，
+                                  # 60 个区间去重后约 20~30 个切片；设 20 只能得到 7~10 个切片
+    search-segment-gap-sec: 6     # 相邻命中帧合并间隔。帧间隔 2s，6s 允许中间缺 2 帧仍合并；
+                                  # 10s 允许缺 4 帧，对 30s 视频偏松，易把不相关帧并入同一区间
+    search-segment-max-span-sec: 35   # 单区间最大跨度。视频本身约 30s，35 允许整段合成一个区间；
+                                      # 120 在此场景下永不触发，且无法防御异常时间戳造成的超长合并
+    search-top-frames: 2          # 每区间返回的关键帧数。前端取 slice_id 做过滤，frames 仅用于预览/排查，
+                                  # result-limit 提到 60 后降为 2 可显著减小响应体
+    search-dedup-by-slice: true   # Reranker 后按 slice_id 去重：每切片只留最佳区间。
+                                  # 每切片 2~3 路摄像头，不去重时 Top N 会被强匹配切片重复占名额
+                                  # （N/2~N/3 个切片），开启后 Top N 即 N 个不同切片
+  # ---- 回放 rosdata.json 重跑调度（ReplayRosDataScheduler）----
+  replay:
+    reextract:
+      enabled: ${DIMS_REPLAY_REEXTRACT_ENABLED:true}      # 总开关；显式 false 关闭（运维临时停用）
+#      cron: ${DIMS_REPLAY_REEXTRACT_CRON:0 0 * * * ?}     # Spring 6 位 cron（秒 分 时 日 月 周），默认每小时整点
+      batch-size: ${DIMS_REPLAY_REEXTRACT_BATCH_SIZE:20}  # 单次扫描上限（避免堆积影响其他流水线）
+      cooldown-minutes: ${DIMS_REPLAY_REEXTRACT_COOLDOWN_MINUTES:2880}  # 已重跑过的切片在冷却期内不再触发
+
+# ---- IAMS 服务间调用（client_credentials，指南 §4.4）----
+# 待 IAMS 侧创建 OAuth2 客户端后启用；token 获取逻辑见 client/IamsClient（后续实现）
+iams:
+  client:
+    id: isim-dims                         # IAMS 后台创建的客户端 ID
+    secret: isim-dims        # 客户端密钥，从环境变量注入
+    token-url: http://iamsbackend.jmc.svc:8080/iams/oauth2/token
+
+# ---- pgvector 向量数据库配置（独立于 DIMS 主库）----
+# 以图搜图 / 以文搜图 / 特征搜图的 768 维 embedding 存储与检索使用该库；
+# 检索端 Mapper 标注 @DS("pgvector") 切换到该数据源，写入端 extract_video_segment.py 经 Java 注入同名连接参数。
+pgvector:
+  host: 192.168.114.2
+  port: 31323
+  database: dims_pgvector
+  username: isim
+  password: zdjs_2023
+
+# ---- MinIO 对象存储配置（dims.storage.type=minio 时启用）----
+# 默认值指向本地共享开发 MinIO（ads-minio @ localhost:9000），启动无需设置环境变量；
+# 生产环境必须经环境变量覆盖（MINIO_ENDPOINT / MINIO_ACCESS_KEY / MINIO_SECRET_KEY / MINIO_BUCKET）。
+# storage.type=minio 时四项非空校验 fail-fast（见 MinioConfig）。
+minio:
+  endpoint: su.bcebos.com
+  access-key: ALTAKbF64PeNWu7PHOaAWY
+  secret-key: 0dd4d674240242acbecb12b
+  pathstyleAccess: false
+  region: su
+  bucket: dims
+  download-bucket: mmt_ads
+
+# ---- 百度 BOS 对象存储配置（AWS S3 SDK V2 兼容协议访问）----
+# AK/SK 从环境变量注入，不落明文（历史版本曾硬编码于本文件，已移除）
+bos:
+  endpoint: ${BOS_ENDPOINT:https://s3.bj.bcebos.com}
+  region: su
+  access-key: ALTAKbF64PeNWu7PHOaAWY
+  secret-key: 0dd4d674240242acbecb12b
+  bucket: dims
+
+# ---- caeri-oss-starter 配置（com.caeri.oss，AWS S3 SDK V2 兼容）----
+# starter 为无条件自动装配（OssAutoConfiguration），缺配置时 S3Client/S3Presigner bean 创建必炸；
+# 项目未使用 OssTemplate，此处仅保证 bean 可创建，默认与 MinIO 同源（path-style，与 MinIO 兼容）。
+# 生产环境经环境变量覆盖（OSS_ENDPOINT / OSS_ACCESS_KEY / OSS_SECRET_KEY）。
+oss:
+  endpoint: http://minio.jmc.svc:9000
+  accessKey: admin
+  secretKey: zdjs_2023
+  pathStyleAccess: true
+  region: cn-north-1
+
+
+logging:
+  level:
+    software.amazon.awssdk: INFO
+    software.amazon.awssdk.services.s3: INFO

@@ -1,0 +1,98 @@
+1.通过标签，起止时间查询数据片段
+2.获取片段的传感器配置
+
+传感器参考
+
+{
+  "dataType": "fusion/image/point cloud",
+  "sensorConfig": {
+    "coordinateSystem": "lidar",
+    "pointCloud": {
+      "primary": "lidar",
+      "format": "pcd"
+    },
+    "sensor_params": {
+      "front_camera": {
+        "camera_model": "pinhole",
+        "extrinsic": [
+          [0.01933218886005947, -0.9998023519597565, -0.004639341507057548, -0.02958361048625493],
+          [0.002592070102514386, 0.0046903123104029545, -0.999985640968417, -0.17707790680298863],
+          [0.9998097557267901, 0.019319885770133313, 0.0026822317883357905, -0.30226182508368793],
+          [0.0, 0.0, 0.0, 1.0]
+        ],
+        "fx": 1109.05239567,
+        "fy": 1109.05239567,
+        "cx": 957.849065461,
+        "cy": 539.672710373,
+        "k1": 0,
+        "k2": 0,
+        "k3": 0,
+        "p1": 0,
+        "p2": 0
+      },
+      "front_right_camera": {
+        "camera_model": "pinhole",
+        "extrinsic": [
+          [-0.8576365501217099, -0.514193147861665, -0.008059440889109102, -0.08203220584625548],
+          [0.006187187992157277, 0.0053536546923379546, -0.9999665279829053, -0.14497277026202338],
+          [0.514219084243363, -0.857657708572335, -0.0014100802707804015, -0.3109913403066076],
+          [0.0, 0.0, 0.0, 1.0]
+        ],
+        "fx": 1108.78210897,
+        "fy": 1108.78210897,
+        "cx": 956.879957389,
+        "cy": 536.673966234,
+        "k1": 0,
+        "k2": 0,
+        "k3": 0,
+        "p1": 0,
+        "p2": 0
+      }
+    },
+    "camera": {
+      "front_camera": "front_camera",
+      "front_right_camera": "front_right_camera"
+    }
+  }
+}
+
+3.获取某个片段的详情
+
+结果参考：
+{
+  "_id": "ObjectId",
+  "name": "scene_001",
+  "description": "",
+  "frameCount": 1200,
+  "startFrameIndex": 0,
+  "endFrameIndex": 1199,
+  "frames": [
+    {
+      "frameKey": "scene_001/frame_000001",
+      "frameIndex": 1,
+      "timestampNs": 1720000000000000000,
+      "files": {
+        "image": {
+          "front_camera": {
+            "fileId": "ObjectId",
+            "url": "tenant/{tenantId}/project/{projectId}/dataset/{datasetId}/segment/scene_001/frame_000001/camera/front_camera.jpg",
+            "width": 1920,
+            "height": 1080
+          },
+          "front_right_camera": {
+            "fileId": "ObjectId",
+            "url": "tenant/{tenantId}/project/{projectId}/dataset/{datasetId}/segment/scene_001/frame_000001/camera/front_right_camera.jpg",
+            "width": 1920,
+            "height": 1080
+          }
+        },
+        "pointCloud": {
+          "fileId": "ObjectId",
+          "url": "tenant/{tenantId}/project/{projectId}/dataset/{datasetId}/segment/scene_001/frame_000001/lidar/frame_000001.pcd",
+          "pointCount": 120000,
+          "format": "pcd"
+        }
+      },
+    }
+  ],
+ }

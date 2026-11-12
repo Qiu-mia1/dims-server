@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.isim.dims.mapper.SensorStreamMapper">
+
+    <!--
+        SensorStreamMapper XML 映射
+
+        提供 selectBySliceId 按切片 ID 查询传感器流列表，
+        结果按 topic 字段升序排列。
+    -->
+
+    <!-- 基础列清单 -->
+    <sql id="baseColumns">
+        id,
+        slice_id,
+        topic,
+        msg_type,
+        sensor_category,
+        msg_count,
+        frequency_hz,
+        first_ts,
+        last_ts,
+        metadata,
+        sensor_name,
+        duration_us
+    </sql>
+
+    <!--
+        按切片 ID 查询传感器流列表
+
+        返回指定切片下的所有 SensorStream 记录，按 topic 排序以保证返回顺序稳定。
+    -->
+    <select id="selectBySliceId" resultType="com.isim.dims.entity.SensorStream">
+        SELECT <include refid="baseColumns" />
+        FROM sensor_stream
+        WHERE slice_id = #{sliceId}
+        ORDER BY topic ASC
+    </select>
+
+</mapper>

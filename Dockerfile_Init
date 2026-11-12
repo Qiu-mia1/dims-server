@@ -1,0 +1,73 @@
+# ============================================================
+# DIMS 后端镜像：Java 应用 + Python 算法运行时（合一镜像）
+#
+# 构建上下文需包含 dims-server/ 与 dims-python/）：
+#   docker build -f dims-server/Dockerfile -t dims-server:<tag> .
+# ============================================================
+
+# ---------- 阶段 1：Maven 构建 ----------
+FROM maven:3.9-eclipse-temurin-17 AS builder
+WORKDIR /build
+
+# 最小 Maven settings（Docker 构建无本机 ~/.m2/settings.xml）：
+
+
+COPY dims-server/pom.xml dims-server/pom.xml
+COPY dims-server/src dims-server/src
+RUN mkdir dims-server/tasks
+RUN mvn -f dims-server/pom.xml -B package -DskipTests
+
+# ---------- 阶段 2：运行镜像（JRE 17 + Python3 + 算法脚本） ----------
+FROM eclipse-temurin:17-jre-jammy
+
+LABEL maintainer="DIMS Team" \
+      description="DIMS 后端：Spring Boot 3.2.5 + Python 算法运行时（rosbag 解析/导出/场景提取）"
+
+# Python3 + pip（rosbags/Pillow/PyYAML 均有 wheel，无需额外系统库）
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 python3-pip tzdata ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python 依赖（pip 源默认公网 PyPI；内网 CI 可 --build-arg 覆盖为公司 pip 镜像）
+ARG PIP_INDEX_URL=https://pypi.org/simple
+COPY dims-python/requirements.txt /opt/dims-python/requirements.txt
+RUN python3 -m pip install --no-cache-dir --prefer-binary \
+    --timeout 300 --retries 5 \
+    -i ${PIP_INDEX_URL} -r /opt/dims-python/requirements.txt
+
+# 算法脚本（约 35MB，含 bag_reader/、scene_extraction/、config/）
+COPY dims-python /opt/dims-python
+
+COPY dims-server /opt/dims-server
+
+# 应用 jar
+COPY --from=builder /build/dims-server/target/dims-*.jar /app/dims.jar
+
+# 时区
+ENV TZ=Asia/Shanghai
+
+# ---- 镜像内路径（对应 application.yml 的 ${ENV:default} 钩子） ----
+ENV DIMS_PYTHON_DIR=/opt/dims-python \
+    DIMS_SCENE_EXTRACTION_DIR=/opt/dims-python/scene_extraction \
+    DIMS_SCENE_EXTRACT_ROOT=/data/tmp/scene_extract \
+    DIMS_STORAGE_TEMP_DIR=/data/tmp \
+    DIMS_BAG_DIR=/data/tmp/bags \
+    DIMS_EXPORT_DIR=/data/tmp/exports \
+    DIMS_VIDEO_DIR=/data/tmp/videos \
+    DIMS_TRAJECTORY_DIR=/data/tmp/trajectories \
+    DIMS_SIGNAL_DIR=/data/tmp/signals \
+    DIMS_CFDI_DIR=/data/tmp/cfdi \
+    DIMS_REPLAY_CACHE_DIR=/data/tmp/cache \
+    DIMS_PUBLIC_FIELDS_CONFIG=/opt/dims-python/config/public_fields_config.json
+
+# 数据目录（部署时挂载到 /data；非 root 用户写权限）
+RUN mkdir -p /data/tmp/cfdi \
+    && useradd -r -u 1000 -m dims \
+    && chown -R dims:dims /data /opt/dims-python /app
+VOLUME /data
+
+USER dims
+EXPOSE 8080
+
+# JAVA_OPTS 供容器内存调优（如 -XX:MaxRAMPercentage=75.0）
+ENTRYPOINT ["sh", "-c", "exec java ${JAVA_OPTS} -jar /app/dims.jar"]
